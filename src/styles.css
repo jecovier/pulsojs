@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+.btn {
+  @apply bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-400 active:bg-blue-600 cursor-pointer;
+}
+
+.container {
+  @apply w-full h-full flex flex-col items-center justify-center mx-auto;
+}

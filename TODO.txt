@@ -1,0 +1,12 @@
+TODO:
+- el for
+
+- el html
+
+- el key
+
+- como hacer bind de los inputs
+
+- $effect
+- $computed
+- $ref
