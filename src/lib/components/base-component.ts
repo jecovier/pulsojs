@@ -1,13 +1,27 @@
-import { config } from "../config";
-import { createSafeContext } from "../utils";
-import { ScopeComponent } from "./scope";
+import { config } from '../config';
+import { createSafeContext } from '../utils';
+import { ScopeComponent } from './scope';
 
 export class BaseComponent extends HTMLElement {
   protected dependencies: Set<string> = new Set();
   protected observers: Map<string, MutationObserver> = new Map();
 
+  constructor() {
+    super();
+  }
+
+  protected shouldNotInitialize() {
+    const isInsideFor = this.closest(config.components.for);
+    const scopeParent = this.closest(config.components.scope);
+    const isScopeOutsideFor = isInsideFor
+      ? isInsideFor.closest(config.components.scope) !== scopeParent
+      : false;
+
+    return isScopeOutsideFor;
+  }
+
   protected getRequiredAttribute(name: string): string {
-    const value = this.getAttribute(name) || "";
+    const value = this.getAttribute(name) || '';
     if (!value) {
       throw new Error(
         `${this.constructor.name}: '${name}' attribute is required`
@@ -18,6 +32,7 @@ export class BaseComponent extends HTMLElement {
 
   protected getScopeParent(): ScopeComponent {
     const scopeParent = this.closest(config.components.scope);
+
     if (!scopeParent) {
       throw new Error(
         `${this.constructor.name}: must be inside a scope component (${config.components.scope})`
@@ -42,7 +57,7 @@ export class BaseComponent extends HTMLElement {
 
     try {
       if (variableMatches) {
-        variableMatches.forEach((variableName) => {
+        variableMatches.forEach(variableName => {
           const signal = scopeParent.getSignal(variableName);
           if (signal) {
             signal.subscribe(callback);
@@ -51,7 +66,7 @@ export class BaseComponent extends HTMLElement {
         });
       }
     } catch (error) {
-      console.error("Error setting up signal observers:", error);
+      console.error('Error setting up signal observers:', error);
     }
   }
 
@@ -60,7 +75,7 @@ export class BaseComponent extends HTMLElement {
 
     try {
       if (this.dependencies.size > 0) {
-        this.dependencies.forEach((variableName) => {
+        this.dependencies.forEach(variableName => {
           const signal = scopeParent.getSignal(variableName);
           if (signal) {
             signal.unsubscribe(callback);
@@ -69,7 +84,7 @@ export class BaseComponent extends HTMLElement {
         this.dependencies.clear();
       }
     } catch (error) {
-      console.error("Error unsubscribing from signal dependencies:", error);
+      console.error('Error unsubscribing from signal dependencies:', error);
     }
   }
 
@@ -81,10 +96,10 @@ export class BaseComponent extends HTMLElement {
       return;
     }
 
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
         if (
-          mutation.type === "attributes" &&
+          mutation.type === 'attributes' &&
           mutation.attributeName === attributeName
         ) {
           callback();
@@ -101,7 +116,7 @@ export class BaseComponent extends HTMLElement {
   }
 
   protected disconnectAttributeObservers() {
-    this.observers.forEach((observer) => {
+    this.observers.forEach(observer => {
       observer.disconnect();
     });
     this.observers.clear();

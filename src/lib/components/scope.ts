@@ -1,43 +1,39 @@
-import { config } from "../config";
-import { Signal } from "../signals";
-import {
-  parseStringToObject,
-  replaceEventsWithReactiveListeners,
-} from "../utils";
-import { BaseComponent } from "./base-component";
+import { config } from '../config';
+import { Parser } from '../parser';
+import { Signal } from '../signals';
+import { createSafeContext, parseStringToObject } from '../utils';
+import { BaseComponent } from './base-component';
 
 export enum Type {
-  STRING = "string",
-  NUMBER = "number",
-  BOOLEAN = "boolean",
-  OBJECT = "object",
-  DATE = "date",
-  ARRAY = "array",
+  STRING = 'string',
+  NUMBER = 'number',
+  BOOLEAN = 'boolean',
+  OBJECT = 'object',
+  DATE = 'date',
+  ARRAY = 'array',
 }
 
 type Signals = Record<string, Signal<unknown>>;
 
 export class ScopeComponent extends BaseComponent {
-  private signals: Signals = {};
+  private context: Signals = {};
 
   connectedCallback() {
-    const state = this.getAttribute("state") || "{}";
-    this.signals = this.stateToSignals(state);
+    const state = this.getAttribute('state') || '{}';
+    const parsedState = this.stringToObject(state);
+    this.setContext(parsedState);
 
-    replaceEventsWithReactiveListeners(this, this.signals);
+    const parser = new Parser(this);
+    const context = createSafeContext(this.context);
+    parser.replaceEventsWithReactiveListeners(context);
   }
 
-  private stateToSignals(state: string): Signals {
+  private stringToObject(state: string): Record<string, unknown> {
     try {
-      const parsedState = parseStringToObject(state || "{}");
-      const signals: Signals = {};
-      for (const key in parsedState) {
-        signals[key] = new Signal(parsedState[key]);
-      }
-      return signals;
+      return parseStringToObject(state || '{}');
     } catch (error) {
       console.error(
-        "ScopeComponent: state attribute is not a valid JSON",
+        'ScopeComponent: state attribute is not a valid JSON',
         error
       );
       return {};
@@ -45,11 +41,23 @@ export class ScopeComponent extends BaseComponent {
   }
 
   public getSignal(name: string): Signal<unknown> {
-    return this.signals[name];
+    return this.context[name];
   }
 
   public getSignals(): Signals {
-    return this.signals;
+    return this.context;
+  }
+
+  public setContext(context: Record<string, unknown>) {
+    for (const key in context) {
+      const value = context[key];
+      if (value instanceof Signal) {
+        this.context[key] = value;
+        continue;
+      }
+
+      this.context[key] = new Signal(value);
+    }
   }
 }
 

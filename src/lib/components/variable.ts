@@ -1,6 +1,6 @@
-import { config } from "../config";
-import { evaluateExpression } from "../utils";
-import { BaseComponent } from "./base-component";
+import { config } from '../config';
+import { evaluateExpression } from '../utils';
+import { BaseComponent } from './base-component';
 
 class VariableComponent extends BaseComponent {
   private name: string;
@@ -12,11 +12,11 @@ class VariableComponent extends BaseComponent {
   }
 
   private initializeAttributes() {
-    this.name = this.getRequiredAttribute("name");
+    this.name = this.getRequiredAttribute('name');
   }
 
   private listenToUpdates() {
-    this.setupAttributeObserver("name", this.render.bind(this));
+    this.setupAttributeObserver('name', this.render.bind(this));
     this.subscribeToSignalDependencies(this.name, this.render.bind(this));
   }
 
