@@ -1,44 +1,44 @@
 export class Signal<T> {
   private _value: T;
-  private _subscribers: Set<() => void>;
+  private _subscribers = new Set<() => void>();
   private _previousValue: T | undefined;
+  private _proxy: Signal<T> | null = null;
 
   constructor(initialValue: T) {
     this._value = initialValue;
-    this._subscribers = new Set();
     this._previousValue = undefined;
 
+    // Only create proxy for objects
     if (typeof initialValue === 'object' && initialValue !== null) {
-      return this.generateProxy(initialValue);
+      this._proxy = this.createProxy();
+      return this._proxy;
     }
 
     return this;
   }
 
-  private generateProxy(target: object) {
+  private createProxy(): Signal<T> {
     return new Proxy(this, {
-      get(target, prop, receiver) {
+      get: (target, prop, receiver) => {
         if (prop in target || typeof prop === 'symbol') {
           return Reflect.get(target, prop, receiver);
         }
 
-        if (
-          typeof target._value === 'object' &&
-          target._value &&
-          prop in target._value
-        ) {
-          return target._value[prop as keyof T];
+        const value = target._value;
+        if (typeof value === 'object' && value && prop in value) {
+          return (value as any)[prop];
         }
 
         return undefined;
       },
-      set(target, prop, value, receiver) {
+      set: (target, prop, value, receiver) => {
         if (prop in target || typeof prop === 'symbol') {
           return Reflect.set(target, prop, value, receiver);
         }
 
-        if (typeof target._value === 'object' && target._value) {
-          (target._value as any)[prop] = value;
+        const currentValue = target._value;
+        if (typeof currentValue === 'object' && currentValue) {
+          (currentValue as any)[prop] = value;
           target._notify();
           return true;
         }
@@ -49,9 +49,14 @@ export class Signal<T> {
   }
 
   [Symbol.toPrimitive](hint: string) {
-    if (hint === 'string') return String(this.value);
-    if (hint === 'number') return Number(this.value);
-    return this.value;
+    switch (hint) {
+      case 'string':
+        return String(this.value);
+      case 'number':
+        return Number(this.value);
+      default:
+        return this.value;
+    }
   }
 
   [Symbol.iterator]() {
@@ -59,16 +64,14 @@ export class Signal<T> {
       console.error('Signal value is not an array');
       return [][Symbol.iterator]();
     }
-
     return this.value[Symbol.iterator]();
   }
 
   get value(): T {
-    if (Signal.currentSubscribers.length > 0) {
-      const currentSubscriber = Signal.currentSubscribers.at(-1);
-      if (currentSubscriber) {
-        this._subscribers.add(currentSubscriber);
-      }
+    // Auto-subscribe if there's an active subscriber context
+    const currentSubscriber = Signal.currentSubscribers.at(-1);
+    if (currentSubscriber) {
+      this._subscribers.add(currentSubscriber);
     }
     return this._value;
   }
@@ -81,18 +84,10 @@ export class Signal<T> {
     }
   }
 
-  /**
-   * Check if a new value is different from the current value
-   * @param newValue - The new value to compare
-   * @returns true if the value has changed, false otherwise
-   */
   private hasValueChanged(newValue: T): boolean {
-    // Handle null/undefined cases
     if (newValue === this._value) return false;
     if (newValue == null || this._value == null)
       return newValue !== this._value;
-
-    // Handle primitive types with strict equality
     if (typeof newValue !== 'object' || typeof this._value !== 'object') {
       return newValue !== this._value;
     }
@@ -103,9 +98,9 @@ export class Signal<T> {
       return newValue.some((item, index) => item !== this._value[index]);
     }
 
-    // Handle objects
     if (Array.isArray(newValue) || Array.isArray(this._value)) return true;
 
+    // Handle objects
     const newKeys = Object.keys(newValue as object);
     const currentKeys = Object.keys(this._value as object);
 
@@ -116,31 +111,16 @@ export class Signal<T> {
     );
   }
 
-  /**
-   * Get the previous value of the signal
-   * @returns The previous value or undefined if no previous value exists
-   */
   get previousValue(): T | undefined {
     return this._previousValue;
   }
 
-  /**
-   * Check if the signal has a previous value
-   * @returns true if there's a previous value, false otherwise
-   */
   get hasPreviousValue(): boolean {
     return this._previousValue !== undefined;
   }
 
-  /**
-   * Get the change history (current and previous values)
-   * @returns Object with current and previous values
-   */
   get changeHistory(): { current: T; previous: T | undefined } {
-    return {
-      current: this._value,
-      previous: this._previousValue,
-    };
+    return { current: this._value, previous: this._previousValue };
   }
 
   subscribe(subscriber: () => void): void {
@@ -156,18 +136,4 @@ export class Signal<T> {
   }
 
   static currentSubscribers: Array<() => void> = [];
-}
-
-// Función para crear valores computados reactivos
-type Computed<T> = () => T;
-
-export function createComputed<T>(fn: () => T): Computed<T> {
-  const wrapper = () => {
-    Signal.currentSubscribers.push(wrapper);
-    wrapper._value = fn();
-    Signal.currentSubscribers.pop();
-  };
-
-  wrapper._value = fn();
-  return () => wrapper._value;
 }

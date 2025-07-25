@@ -31,12 +31,8 @@ export class ForComponent extends BaseComponent {
   }
 
   private initializeAttributes() {
-    try {
-      this.eachValue = this.getRequiredAttribute('each');
-      this.asValue = this.getRequiredAttribute('as');
-    } catch (error) {
-      console.error('ForComponent initialization error:', error);
-    }
+    this.eachValue = this.getRequiredAttribute('each');
+    this.asValue = this.getAttribute('as') || '';
   }
 
   private initializeTemplate() {
@@ -59,16 +55,13 @@ export class ForComponent extends BaseComponent {
   }
 
   private listenToUpdates() {
-    this.setupAttributeObserver('each', () => {
-      this.eachValue = this.getRequiredAttribute('each');
+    const updateCallback = () => {
+      this.initializeAttributes();
       this.render();
-    });
+    };
 
-    this.setupAttributeObserver('as', () => {
-      this.asValue = this.getAttribute('as') || '';
-      this.render();
-    });
-
+    this.setupAttributeObserver('each', updateCallback);
+    this.setupAttributeObserver('as', updateCallback);
     this.subscribeToSignalDependencies(this.eachValue, () => {
       this.render();
     });
@@ -119,14 +112,9 @@ export class ForComponent extends BaseComponent {
         ...(context.$state as Record<string, unknown>),
         $index: index,
         $item: item,
+        [this.asValue]: item,
         $length: arrayValue.length,
       });
-
-      if (this.asValue) {
-        scopeElement.setContext({
-          [this.asValue]: item,
-        });
-      }
 
       // Move the cloned content into the scope
       const fragment = document.createDocumentFragment();
