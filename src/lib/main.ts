@@ -3,7 +3,6 @@ import './components/scope';
 import './components/variable';
 import './components/if';
 import './components/for';
-import './components/optimized-counter';
 import { renderOptimizer } from './utils/render-optimizer';
 
 // Import development tools (only in development)

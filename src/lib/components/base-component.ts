@@ -59,12 +59,45 @@ export class BaseComponent extends HTMLElement {
     return createSafeContext(signals);
   }
 
+  protected extractDependencies(expression: string): string[] {
+    // Extract all variable names from the expression
+    // This handles simple variables like "name" and complex ones like "items.length"
+    const matches = expression.match(/\b\w+\b/g) || [];
+    return matches.filter(match => {
+      // Filter out JavaScript keywords and built-in properties
+      const jsKeywords = [
+        'true',
+        'false',
+        'null',
+        'undefined',
+        'NaN',
+        'Infinity',
+      ];
+      const jsBuiltins = ['length', 'toString', 'valueOf', 'constructor'];
+
+      const parts = match.split('.');
+      const baseVar = parts[0];
+
+      if (baseVar === 'this' || baseVar === 'state') {
+        return false;
+      }
+
+      // Return false if baseVar is a number
+      if (!isNaN(Number(baseVar))) {
+        return false;
+      }
+
+      return !jsKeywords.includes(baseVar) && !jsBuiltins.includes(baseVar);
+    });
+  }
+
   protected subscribeToSignalDependencies(
     expression: string,
     callback: () => void
   ) {
-    const variableMatches = expression.match(/\b\w+\b/g);
+    const variableMatches = this.extractDependencies(expression);
     const scopeParent = this.getScopeParent();
+    console.log('subscribeToSignalDependencies', variableMatches);
 
     try {
       if (variableMatches) {

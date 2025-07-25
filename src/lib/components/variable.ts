@@ -17,45 +17,10 @@ class VariableComponent extends BaseComponent {
     this.name = this.getRequiredAttribute('name');
   }
 
-  private extractDependencies(expression: string): string[] {
-    // Extract all variable names from the expression
-    // This handles simple variables like "name" and complex ones like "items.length"
-    const matches = expression.match(/\b\w+(?:\.\w+)*\b/g) || [];
-    return matches.filter(match => {
-      // Filter out JavaScript keywords and built-in properties
-      const jsKeywords = [
-        'true',
-        'false',
-        'null',
-        'undefined',
-        'NaN',
-        'Infinity',
-      ];
-      const jsBuiltins = ['length', 'toString', 'valueOf', 'constructor'];
-
-      const parts = match.split('.');
-      const baseVar = parts[0];
-
-      return !jsKeywords.includes(baseVar) && !jsBuiltins.includes(baseVar);
-    });
-  }
-
   private listenToUpdates() {
     this.setupAttributeObserver('name', () => {
       // Force render when name attribute changes
       this.forceRender(() => this.render());
-    });
-
-    // Extract all dependencies from the expression
-    const dependencies = this.extractDependencies(this.name);
-
-    // Subscribe to all dependencies
-    dependencies.forEach(dep => {
-      this.subscribeToSignalDependencies(dep, () => {
-        // Use forceRender for variable components to ensure they always update
-        // when their dependencies change, since the expression might be complex
-        this.forceRender(() => this.render());
-      });
     });
 
     // Also subscribe to the full expression as a fallback
