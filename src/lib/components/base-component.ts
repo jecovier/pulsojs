@@ -44,6 +44,14 @@ export class BaseComponent extends HTMLElement {
     return value;
   }
 
+  protected getBooleanAttribute(name: string): boolean {
+    try {
+      return Boolean(JSON.parse(this.getAttribute(name) || ''));
+    } catch {
+      return false;
+    }
+  }
+
   protected getScopeParent(): ScopeComponent {
     if (this.scopeParentCache) {
       return this.scopeParentCache;

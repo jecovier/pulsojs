@@ -1,420 +1,518 @@
-# Mejoras Sugeridas para WComp - Biblioteca de Componentes Reactivos
+# Mejoras Sugeridas para WComp
 
-## Resumen Ejecutivo
+## Resumen del Proyecto
 
-WComp es una biblioteca de componentes reactivos que implementa un sistema de señales similar a SolidJS/Vue 3. El código está bien estructurado pero tiene varias oportunidades de mejora en términos de rendimiento, seguridad, mantenibilidad y funcionalidad.
+WComp es una biblioteca de componentes web reactivos que implementa un sistema de señales (signals) similar a frameworks modernos como SolidJS. El proyecto utiliza Web Components nativos con TypeScript y proporciona componentes como `r-scope`, `r-var`, `r-if`, y `r-for`.
 
-## 🚀 Mejoras de Alto Impacto
+## Mejoras Prioritarias
 
-### 1. **Gestión de Memoria y Cleanup**
+### 1. **Gestión de Memoria y Performance**
 
-**Problema**: Los componentes no limpian correctamente las suscripciones a señales, lo que puede causar memory leaks.
-
-**Solución**:
+#### 1.1 Optimización de Cleanup
 
 ```typescript
-// En BaseComponent
-disconnectedCallback() {
-  this.unsubscribeFromSignalDependencies(this.render.bind(this));
-  this.disconnectAttributeObservers();
-  // Agregar cleanup de event listeners
-  this.cleanupEventListeners();
+// Problema actual: Cleanup manual en múltiples lugares
+// Mejora: Implementar un sistema de cleanup automático
+class BaseComponent extends HTMLElement {
+  private cleanupRegistry = new Set<() => void>();
+
+  protected registerCleanup(cleanupFn: () => void) {
+    this.cleanupRegistry.add(cleanupFn);
+  }
+
+  disconnectedCallback() {
+    this.cleanupRegistry.forEach(cleanup => cleanup());
+    this.cleanupRegistry.clear();
+  }
 }
 ```
 
-### 2. **Optimización de Re-renders**
-
-**Problema**: Los componentes se re-renderizan innecesariamente cuando las dependencias no han cambiado.
-
-**Solución**:
+#### 1.2 Memoización de Expresiones
 
 ```typescript
-// Implementar comparación de valores previos
-private previousValues = new Map<string, unknown>();
-
-private shouldUpdate(dependencies: string[]): boolean {
-  return dependencies.some(dep => {
-    const currentValue = this.getDependencyValue(dep);
-    const previousValue = this.previousValues.get(dep);
-    const hasChanged = !Object.is(currentValue, previousValue);
-    this.previousValues.set(dep, currentValue);
-    return hasChanged;
-  });
-}
-```
-
-### 3. **Seguridad en Evaluación de Expresiones**
-
-**Problema**: Uso de `new Function()` que puede ser peligroso en producción.
-
-**Solución**:
-
-```typescript
-// Implementar un evaluador de expresiones seguro
-class SafeExpressionEvaluator {
-  private allowedGlobals = ['Math', 'Date', 'Array', 'Object'];
+// Implementar cache inteligente para evaluaciones de expresiones
+class ExpressionCache {
+  private cache = new Map<
+    string,
+    { result: unknown; dependencies: string[]; timestamp: number }
+  >();
+  private maxAge = 5000; // 5 segundos
 
   evaluate(expression: string, context: Record<string, unknown>) {
-    // Validar expresión antes de evaluar
-    if (this.containsUnsafeCode(expression)) {
-      throw new Error('Unsafe expression detected');
+    const cacheKey = this.createCacheKey(expression, context);
+    const cached = this.cache.get(cacheKey);
+
+    if (cached && Date.now() - cached.timestamp < this.maxAge) {
+      return cached.result;
     }
-    // Usar un parser más seguro
+
+    const result = evaluateExpression(expression, context);
+    this.cache.set(cacheKey, {
+      result,
+      dependencies: Object.keys(context),
+      timestamp: Date.now(),
+    });
+
+    return result;
   }
 }
 ```
 
-## 🔧 Mejoras de Arquitectura
+### 2. **Arquitectura y Estructura**
 
-### 4. **Sistema de Tipos Mejorado**
-
-**Problema**: Falta de tipado fuerte en las expresiones y contextos.
-
-**Solución**:
+#### 2.1 Sistema de Plugins
 
 ```typescript
-// Definir tipos para el contexto
-interface ComponentContext {
-  $state: Record<string, Signal<unknown>>;
-  $index?: number;
-  $item?: unknown;
-  $length?: number;
+// Crear un sistema de plugins para extender funcionalidad
+interface WCompPlugin {
+  name: string;
+  version: string;
+  install(app: WCompApp): void;
 }
 
-// Tipado para expresiones
-type Expression<T = unknown> = string;
-type ComputedExpression<T> = () => T;
+class WCompApp {
+  private plugins = new Map<string, WCompPlugin>();
+
+  use(plugin: WCompPlugin) {
+    this.plugins.set(plugin.name, plugin);
+    plugin.install(this);
+  }
+}
 ```
 
-### 5. **Sistema de Eventos Mejorado**
-
-**Problema**: Los eventos se procesan de forma básica sin soporte para modificadores.
-
-**Solución**:
+#### 2.2 Gestión de Estado Global
 
 ```typescript
-// Soporte para modificadores de eventos
-class EventHandler {
-  parseEventDirective(directive: string) {
-    const [event, ...modifiers] = directive.split('.');
-    return { event, modifiers };
+// Implementar un store global para estado compartido
+class GlobalStore {
+  private static instance: GlobalStore;
+  private stores = new Map<string, Signal<unknown>>();
+
+  static getInstance(): GlobalStore {
+    if (!GlobalStore.instance) {
+      GlobalStore.instance = new GlobalStore();
+    }
+    return GlobalStore.instance;
   }
 
-  addEventListener(element: HTMLElement, event: string, modifiers: string[]) {
-    const handler = (e: Event) => {
-      if (modifiers.includes('prevent')) e.preventDefault();
-      if (modifiers.includes('stop')) e.stopPropagation();
-      // Ejecutar código del evento
+  createStore<T>(name: string, initialValue: T): Signal<T> {
+    const signal = new Signal(initialValue);
+    this.stores.set(name, signal);
+    return signal;
+  }
+
+  getStore<T>(name: string): Signal<T> | undefined {
+    return this.stores.get(name) as Signal<T>;
+  }
+}
+```
+
+### 3. **Mejoras en Componentes**
+
+#### 3.1 Componente Switch/Case
+
+```typescript
+// Agregar soporte para switch/case
+class SwitchComponent extends BaseComponent {
+  private value: string = '';
+  private cases = new Map<string, HTMLElement>();
+  private defaultCase: HTMLElement | null = null;
+
+  connectedCallback() {
+    this.value = this.getRequiredAttribute('value');
+    this.initializeCases();
+    this.render();
+  }
+
+  private initializeCases() {
+    this.querySelectorAll('template[data-case]').forEach(template => {
+      const caseValue = template.getAttribute('data-case');
+      if (caseValue === 'default') {
+        this.defaultCase = this.createCaseElement(template);
+      } else {
+        this.cases.set(caseValue!, this.createCaseElement(template));
+      }
+    });
+  }
+}
+```
+
+#### 3.2 Componente Computed
+
+```typescript
+// Agregar componente para valores computados
+class ComputedComponent extends BaseComponent {
+  private expression: string = '';
+  private signal: Signal<unknown> | null = null;
+
+  connectedCallback() {
+    this.expression = this.getRequiredAttribute('expression');
+    this.createComputedSignal();
+  }
+
+  private createComputedSignal() {
+    const scopeParent = this.getScopeParent();
+    const computedName = this.getAttribute('name') || 'computed';
+
+    this.signal = new Signal(null);
+    scopeParent.setContext({ [computedName]: this.signal });
+
+    this.subscribeToSignalDependencies(this.expression, () => {
+      const result = evaluateExpression(this.expression, this.getSafeContext());
+      this.signal!.value = result;
+    });
+  }
+}
+```
+
+### 4. **Mejoras en el Sistema de Señales**
+
+#### 4.1 Señales Derivadas (Computed Signals)
+
+```typescript
+class ComputedSignal<T> extends Signal<T> {
+  private computation: () => T;
+  private dependencies: Signal<unknown>[] = [];
+
+  constructor(computation: () => T) {
+    super(computation());
+    this.computation = computation;
+    this.setupDependencies();
+  }
+
+  private setupDependencies() {
+    Signal.currentSubscribers.push(this.update.bind(this));
+    this.computation();
+    Signal.currentSubscribers.pop();
+  }
+
+  private update() {
+    this.value = this.computation();
+  }
+}
+```
+
+#### 4.2 Batch Updates
+
+```typescript
+class SignalBatch {
+  private static batchDepth = 0;
+  private static pendingUpdates = new Set<Signal<unknown>>();
+
+  static start() {
+    this.batchDepth++;
+  }
+
+  static end() {
+    this.batchDepth--;
+    if (this.batchDepth === 0) {
+      this.flush();
+    }
+  }
+
+  static add(signal: Signal<unknown>) {
+    this.pendingUpdates.add(signal);
+  }
+
+  private static flush() {
+    this.pendingUpdates.forEach(signal => signal['_notify']());
+    this.pendingUpdates.clear();
+  }
+}
+```
+
+### 5. **Mejoras en el Parser**
+
+#### 5.1 Soporte para Expresiones Complejas
+
+```typescript
+// Mejorar el parser para soportar expresiones más complejas
+class AdvancedParser extends Parser {
+  private expressionCache = new Map<string, Function>();
+
+  parseExpression(expression: string, context: Record<string, unknown>) {
+    // Soporte para operadores ternarios, funciones, etc.
+    const sanitizedExpression = this.sanitizeExpression(expression);
+    return this.evaluateWithCache(sanitizedExpression, context);
+  }
+
+  private sanitizeExpression(expression: string): string {
+    // Implementar sanitización más robusta
+    return expression.replace(/[<>]/g, '');
+  }
+}
+```
+
+#### 5.2 Soporte para Directivas Personalizadas
+
+```typescript
+// Sistema de directivas personalizadas
+interface Directive {
+  name: string;
+  priority: number;
+  bind(
+    element: HTMLElement,
+    value: string,
+    context: Record<string, unknown>
+  ): void;
+  unbind(element: HTMLElement): void;
+}
+
+class DirectiveManager {
+  private directives = new Map<string, Directive>();
+
+  register(directive: Directive) {
+    this.directives.set(directive.name, directive);
+  }
+
+  processElement(element: HTMLElement, context: Record<string, unknown>) {
+    [...element.attributes]
+      .filter(attr => attr.name.startsWith('r-'))
+      .forEach(attr => {
+        const directiveName = attr.name.slice(2);
+        const directive = this.directives.get(directiveName);
+        if (directive) {
+          directive.bind(element, attr.value, context);
+        }
+      });
+  }
+}
+```
+
+### 6. **Mejoras en el Sistema de Eventos**
+
+#### 6.1 Event Modifiers
+
+```typescript
+// Soporte para modificadores de eventos (como Vue)
+class EventModifierParser {
+  private static modifiers = {
+    prevent: (event: Event) => event.preventDefault(),
+    stop: (event: Event) => event.stopPropagation(),
+    once: (event: Event) =>
+      event.target?.removeEventListener(event.type, arguments.callee),
+    self: (event: Event) =>
+      event.target === event.currentTarget ? null : event.preventDefault(),
+  };
+
+  static parseEventString(eventString: string): {
+    event: string;
+    modifiers: string[];
+  } {
+    const parts = eventString.split('.');
+    return {
+      event: parts[0],
+      modifiers: parts.slice(1),
     };
-    element.addEventListener(event, handler);
+  }
+
+  static createModifiedListener(
+    originalListener: EventListener,
+    modifiers: string[]
+  ): EventListener {
+    return (event: Event) => {
+      modifiers.forEach(modifier => {
+        const modifierFn =
+          this.modifiers[modifier as keyof typeof this.modifiers];
+        if (modifierFn) modifierFn(event);
+      });
+      originalListener(event);
+    };
   }
 }
 ```
 
-## 📈 Mejoras de Rendimiento
+### 7. **Mejoras en el Sistema de Testing**
 
-### 6. **Virtualización para Listas Grandes**
-
-**Problema**: El componente `r-for` renderiza todos los elementos, incluso los no visibles.
-
-**Solución**:
+#### 7.1 Testing Utilities
 
 ```typescript
-// Implementar virtualización
-class VirtualForComponent extends ForComponent {
-  private visibleRange = { start: 0, end: 20 };
-  private itemHeight = 50;
-
-  private calculateVisibleRange() {
-    const scrollTop = this.scrollTop;
-    const containerHeight = this.clientHeight;
-    this.visibleRange.start = Math.floor(scrollTop / this.itemHeight);
-    this.visibleRange.end = Math.ceil(
-      (scrollTop + containerHeight) / this.itemHeight
-    );
-  }
-
-  render() {
-    // Solo renderizar elementos visibles
-    const visibleItems = this.arrayValue.slice(
-      this.visibleRange.start,
-      this.visibleRange.end
-    );
-  }
-}
-```
-
-### 7. **Debouncing de Actualizaciones**
-
-**Problema**: Múltiples actualizaciones rápidas causan re-renders innecesarios.
-
-**Solución**:
-
-```typescript
-// Implementar debouncing
-class DebouncedSignal<T> extends Signal<T> {
-  private debounceTimeout: number | null = null;
-  private debounceDelay = 16; // ~60fps
-
-  set value(newValue: T) {
-    if (this.debounceTimeout) {
-      clearTimeout(this.debounceTimeout);
-    }
-
-    this.debounceTimeout = setTimeout(() => {
-      super.value = newValue;
-      this.debounceTimeout = null;
-    }, this.debounceDelay);
-  }
-}
-```
-
-## 🛡️ Mejoras de Seguridad
-
-### 8. **Sanitización de HTML**
-
-**Problema**: No hay sanitización del contenido HTML dinámico.
-
-**Solución**:
-
-```typescript
-// Integrar DOMPurify o similar
-import DOMPurify from 'dompurify';
-
-class SafeHTMLRenderer {
-  render(content: string): string {
-    return DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: ['span', 'div', 'p', 'strong', 'em'],
-      ALLOWED_ATTR: ['class', 'id'],
-    });
-  }
-}
-```
-
-### 9. **Validación de Props**
-
-**Problema**: No hay validación de atributos/props de componentes.
-
-**Solución**:
-
-```typescript
-// Sistema de validación de props
-interface PropValidator {
-  type: 'string' | 'number' | 'boolean' | 'object' | 'array';
-  required?: boolean;
-  default?: unknown;
-  validator?: (value: unknown) => boolean;
-}
-
-class PropValidator {
-  validate(
-    props: Record<string, unknown>,
-    validators: Record<string, PropValidator>
-  ) {
-    for (const [key, validator] of Object.entries(validators)) {
-      const value = props[key];
-
-      if (validator.required && value === undefined) {
-        throw new Error(`Prop '${key}' is required`);
-      }
-
-      if (
-        value !== undefined &&
-        validator.validator &&
-        !validator.validator(value)
-      ) {
-        throw new Error(`Invalid value for prop '${key}'`);
-      }
-    }
-  }
-}
-```
-
-## 🧪 Mejoras de Testing
-
-### 10. **Sistema de Testing**
-
-**Problema**: No hay tests para los componentes.
-
-**Solución**:
-
-```typescript
-// Configurar Jest/Vitest
-// tests/components/scope.test.ts
-describe('ScopeComponent', () => {
-  it('should create signals from state', () => {
-    const scope = document.createElement('r-scope');
-    scope.setAttribute('state', '{name: "John", age: 25}');
+// Utilidades para testing
+class WCompTestUtils {
+  static createTestScope(state: Record<string, unknown> = {}): ScopeComponent {
+    const scope = document.createElement('r-scope') as ScopeComponent;
+    scope.setAttribute('state', JSON.stringify(state));
     document.body.appendChild(scope);
-
-    expect(scope.getSignal('name').value).toBe('John');
-    expect(scope.getSignal('age').value).toBe(25);
-  });
-});
-```
-
-### 11. **Debugging y DevTools**
-
-**Problema**: No hay herramientas de debugging.
-
-**Solución**:
-
-```typescript
-// Panel de debugging
-class DevTools {
-  static showComponentTree() {
-    const components = document.querySelectorAll('[class*="r-"]');
-    console.table(
-      Array.from(components).map(comp => ({
-        tagName: comp.tagName,
-        attributes: Array.from(comp.attributes).map(
-          attr => `${attr.name}="${attr.value}"`
-        ),
-        dependencies: comp.dependencies?.size || 0,
-      }))
-    );
+    return scope;
   }
 
-  static showSignalGraph() {
-    // Visualizar dependencias entre señales
-  }
-}
-```
-
-## 📚 Mejoras de Documentación
-
-### 12. **Documentación de API**
-
-**Problema**: Falta documentación clara de la API.
-
-**Solución**:
-
-```typescript
-// JSDoc comments
-/**
- * Scope component that manages reactive state
- * @example
- * <r-scope state='{name: "John", age: 25}'>
- *   <p>Hello {{ name }}, you are {{ age }} years old</p>
- * </r-scope>
- */
-export class ScopeComponent extends BaseComponent {
-  /**
-   * Gets a signal by name
-   * @param name - The name of the signal
-   * @returns The signal instance
-   */
-  public getSignal(name: string): Signal<unknown> {
-    return this.context[name];
-  }
-}
-```
-
-### 13. **Ejemplos y Playground**
-
-**Problema**: Falta de ejemplos prácticos.
-
-**Solución**:
-
-- Crear un playground interactivo
-- Ejemplos de casos de uso comunes
-- Guías de migración desde otros frameworks
-
-## 🔄 Mejoras de Compatibilidad
-
-### 14. **Soporte para SSR**
-
-**Problema**: No hay soporte para Server-Side Rendering.
-
-**Solución**:
-
-```typescript
-// Implementar hidratación
-class HydrationManager {
-  static hydrate(container: HTMLElement) {
-    const components = container.querySelectorAll('[class*="r-"]');
-    components.forEach(comp => {
-      if (comp instanceof BaseComponent) {
-        comp.connectedCallback();
-      }
+  static waitForRender(component: BaseComponent): Promise<void> {
+    return new Promise(resolve => {
+      const observer = new MutationObserver(() => {
+        observer.disconnect();
+        resolve();
+      });
+      observer.observe(component, { childList: true, subtree: true });
     });
   }
+
+  static cleanup() {
+    document
+      .querySelectorAll('r-scope, r-var, r-if, r-for')
+      .forEach(el => el.remove());
+  }
 }
 ```
 
-### 15. **Compatibilidad con Frameworks**
+### 8. **Mejoras en el Build System**
 
-**Problema**: No hay integración con frameworks populares.
-
-**Solución**:
+#### 8.1 Tree Shaking Optimizado
 
 ```typescript
-// Integración con React
-const useWCompScope = (state: Record<string, unknown>) => {
-  const [scopeRef, setScopeRef] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    if (scopeRef) {
-      const scope = scopeRef as ScopeComponent;
-      scope.setContext(state);
-    }
-  }, [state, scopeRef]);
-
-  return setScopeRef;
+// Configuración de Vite para mejor tree shaking
+// vite.config.js
+export default {
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          core: ['src/lib/main.ts'],
+          components: ['src/lib/components/'],
+          utils: ['src/lib/utils/'],
+        },
+      },
+    },
+  },
 };
 ```
 
-## 🎯 Roadmap de Implementación
+#### 8.2 Bundle Analysis
 
-### Fase 1 (Crítico - 2-3 semanas)
+```typescript
+// Agregar análisis de bundle
+// package.json
+{
+  "scripts": {
+    "analyze": "vite-bundle-analyzer",
+    "build:analyze": "npm run build && npm run analyze"
+  }
+}
+```
 
-1. ✅ **Gestión de memoria y cleanup** - IMPLEMENTADO
-   - Cleanup automático de componentes
-   - Tracking de event listeners
-   - Gestión de señales y observers
-   - Herramientas de debugging integradas
-2. ✅ Seguridad en evaluación de expresiones
-3. ✅ Sistema de testing básico
-4. ✅ Documentación de API
+### 9. **Mejoras en la Documentación**
 
-### Fase 2 (Importante - 4-6 semanas)
+#### 9.1 JSDoc Completo
 
-1. ✅ Optimización de re-renders
-2. ✅ Sistema de tipos mejorado
-3. ✅ API de componentes más intuitiva
-4. ✅ Debouncing de actualizaciones
+```typescript
+/**
+ * Base class for all WComp components
+ * @abstract
+ * @extends HTMLElement
+ */
+export abstract class BaseComponent extends HTMLElement {
+  /**
+   * Set of signal dependencies for this component
+   * @protected
+   */
+  protected dependencies = new Set<string>();
 
-### Fase 3 (Mejoras - 6-8 semanas)
+  /**
+   * Evaluates an expression in the current context
+   * @param expression - The expression to evaluate
+   * @returns The result of the evaluation
+   * @throws {Error} If the expression cannot be evaluated
+   */
+  protected evaluateExpression(expression: string): unknown {
+    // Implementation
+  }
+}
+```
 
-1. ✅ Virtualización para listas
-2. ✅ Sanitización de HTML
-3. ✅ DevTools y debugging
-4. ✅ Soporte para SSR
+#### 9.2 Ejemplos Interactivos
 
-### Fase 4 (Futuro - 8+ semanas)
+```html
+<!-- Crear ejemplos en la documentación -->
+<r-scope state="{ count: 0, items: ['a', 'b', 'c'] }">
+  <button r-onclick="count++">Increment</button>
+  <r-var name="count"></r-var>
 
-1. ✅ Integración con frameworks
-2. ✅ Playground interactivo
-3. ✅ Performance monitoring
-4. ✅ Plugin system
+  <r-for each="items" as="item">
+    <div r-onclick="console.log(item)">{{ item }}</div>
+  </r-for>
+</r-scope>
+```
 
-## 📊 Métricas de Éxito
+### 10. **Mejoras en el Sistema de Errores**
 
-- **Performance**: Reducción del 50% en tiempo de re-render
-- **Memory**: Eliminación de memory leaks
-- **Security**: 0 vulnerabilidades de XSS
-- **Developer Experience**: Reducción del 30% en tiempo de desarrollo
-- **Bundle Size**: Mantener < 50KB gzipped
+#### 10.1 Error Boundaries
 
-## 🛠️ Herramientas Recomendadas
+```typescript
+class ErrorBoundary extends BaseComponent {
+  private hasError = false;
+  private errorMessage = '';
 
-- **Testing**: Vitest + Testing Library
-- **Linting**: ESLint + TypeScript ESLint
-- **Formatting**: Prettier
-- **Security**: DOMPurify, CSP headers
-- **Performance**: Lighthouse CI, Bundle Analyzer
-- **Documentation**: Storybook, TypeDoc
+  connectedCallback() {
+    this.setupErrorHandling();
+  }
 
----
+  private setupErrorHandling() {
+    const originalRender = this.render.bind(this);
+    this.render = () => {
+      try {
+        originalRender();
+      } catch (error) {
+        this.handleError(error);
+      }
+    };
+  }
 
-_Este documento debe ser revisado y actualizado regularmente según el progreso del proyecto._
+  private handleError(error: Error) {
+    this.hasError = true;
+    this.errorMessage = error.message;
+    this.innerHTML = `<div class="error">Error: ${this.errorMessage}</div>`;
+  }
+}
+```
+
+#### 10.2 Logging Mejorado
+
+```typescript
+class Logger {
+  private static instance: Logger;
+  private logLevel: 'debug' | 'info' | 'warn' | 'error' = 'info';
+
+  static getInstance(): Logger {
+    if (!Logger.instance) {
+      Logger.instance = new Logger();
+    }
+    return Logger.instance;
+  }
+
+  debug(message: string, ...args: unknown[]) {
+    if (this.logLevel === 'debug') {
+      console.debug(`[WComp Debug] ${message}`, ...args);
+    }
+  }
+
+  error(message: string, error?: Error) {
+    console.error(`[WComp Error] ${message}`, error);
+  }
+}
+```
+
+## Prioridades de Implementación
+
+### Alta Prioridad
+
+1. **Gestión de memoria mejorada** - Evitar memory leaks
+2. **Sistema de cleanup automático** - Simplificar el manejo de recursos
+3. **Memoización de expresiones** - Mejorar performance
+4. **Error boundaries** - Mejor experiencia de desarrollo
+
+### Media Prioridad
+
+1. **Señales derivadas** - Funcionalidad avanzada
+2. **Sistema de plugins** - Extensibilidad
+3. **Componente switch/case** - Más opciones de control de flujo
+4. **Event modifiers** - Mejor UX para eventos
+
+### Baja Prioridad
+
+1. **Bundle analysis** - Optimización de build
+2. **Testing utilities** - Mejor testing
+3. **Documentación interactiva** - Mejor DX
+4. **Logging avanzado** - Debugging
+
+## Conclusión
+
+Estas mejoras transformarían WComp en una biblioteca más robusta, performante y fácil de usar. La implementación debería seguir un enfoque incremental, priorizando las mejoras de memoria y performance primero, seguidas por las funcionalidades avanzadas y finalmente las mejoras de DX.

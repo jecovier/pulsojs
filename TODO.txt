@@ -7,7 +7,6 @@ TODO:
 - como hacer bind de los inputs
 
 - como hacer attr reactivos?
-    - usar un tag r-attr que reactivamente cambie el attr del padre?
     - cualquier expression "{ exp }" se agregue a unos subscribers?
 
 - $effect

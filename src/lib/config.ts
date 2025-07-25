@@ -4,5 +4,6 @@ export const config = {
     var: 'r-var',
     if: 'r-if',
     for: 'r-for',
+    attr: 'r-attr',
   },
 };
