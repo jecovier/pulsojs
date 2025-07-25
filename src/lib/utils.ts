@@ -25,8 +25,11 @@ export function replaceVariablesWithReactiveComponent(
 
 export function executeCode(code: string, context: Record<string, unknown>) {
   try {
-    const executeFn = new Function('context', `with (context) { ${code} }`);
-    executeFn(context);
+    // Create a function with context variables bound to its scope
+    const contextKeys = Object.keys(context);
+    const contextValues = Object.values(context);
+    const executeFn = new Function(...contextKeys, code);
+    executeFn.bind(null, ...contextValues)();
   } catch (error) {
     console.error('Error in code execution:', error);
     return null;
@@ -38,11 +41,11 @@ export function evaluateExpression(
   context: Record<string, unknown>
 ) {
   try {
-    const evaluateFn = new Function(
-      'context',
-      `with (context) { return ${expression}; }`
-    );
-    const result = evaluateFn(context);
+    // Create a function with context variables bound to its scope
+    const contextKeys = Object.keys(context);
+    const contextValues = Object.values(context);
+    const evaluateFn = new Function(...contextKeys, `return ${expression};`);
+    const result = evaluateFn.bind(null, ...contextValues)();
 
     if (result instanceof Signal) {
       return result.value;
@@ -56,8 +59,10 @@ export function evaluateExpression(
 }
 
 export function createSafeContext(signals: Record<string, unknown>) {
+  const $state = createSignalProxy(signals);
+
   return {
-    $state: createSignalProxy(signals),
+    $state,
   };
 }
 

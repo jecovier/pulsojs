@@ -51,6 +51,7 @@ export class ScopeComponent extends BaseComponent {
   public setContext(context: Record<string, unknown>) {
     for (const key in context) {
       const value = context[key];
+
       if (value instanceof Signal) {
         this.context[key] = value;
         continue;
