@@ -86,33 +86,7 @@ type Expression<T = unknown> = string;
 type ComputedExpression<T> = () => T;
 ```
 
-### 5. **API de Componentes Más Intuitiva**
-
-**Problema**: La API actual es verbosa y poco intuitiva.
-
-**Solución**:
-
-```typescript
-// Crear helpers para componentes
-export const createComponent = (name: string, options: ComponentOptions) => {
-  return class extends BaseComponent {
-    // Implementación automática de lifecycle
-  };
-};
-
-// Uso más simple
-createComponent('r-counter', {
-  props: ['initial', 'step'],
-  template: `<button onclick="increment()">{{ count }}</button>`,
-  methods: {
-    increment() {
-      this.count += this.step;
-    },
-  },
-});
-```
-
-### 6. **Sistema de Eventos Mejorado**
+### 5. **Sistema de Eventos Mejorado**
 
 **Problema**: Los eventos se procesan de forma básica sin soporte para modificadores.
 
@@ -139,7 +113,7 @@ class EventHandler {
 
 ## 📈 Mejoras de Rendimiento
 
-### 7. **Virtualización para Listas Grandes**
+### 6. **Virtualización para Listas Grandes**
 
 **Problema**: El componente `r-for` renderiza todos los elementos, incluso los no visibles.
 
@@ -170,7 +144,7 @@ class VirtualForComponent extends ForComponent {
 }
 ```
 
-### 8. **Debouncing de Actualizaciones**
+### 7. **Debouncing de Actualizaciones**
 
 **Problema**: Múltiples actualizaciones rápidas causan re-renders innecesarios.
 
@@ -197,7 +171,7 @@ class DebouncedSignal<T> extends Signal<T> {
 
 ## 🛡️ Mejoras de Seguridad
 
-### 9. **Sanitización de HTML**
+### 8. **Sanitización de HTML**
 
 **Problema**: No hay sanitización del contenido HTML dinámico.
 
@@ -217,7 +191,7 @@ class SafeHTMLRenderer {
 }
 ```
 
-### 10. **Validación de Props**
+### 9. **Validación de Props**
 
 **Problema**: No hay validación de atributos/props de componentes.
 
@@ -258,7 +232,7 @@ class PropValidator {
 
 ## 🧪 Mejoras de Testing
 
-### 11. **Sistema de Testing**
+### 10. **Sistema de Testing**
 
 **Problema**: No hay tests para los componentes.
 
@@ -279,7 +253,7 @@ describe('ScopeComponent', () => {
 });
 ```
 
-### 12. **Debugging y DevTools**
+### 11. **Debugging y DevTools**
 
 **Problema**: No hay herramientas de debugging.
 
@@ -309,7 +283,7 @@ class DevTools {
 
 ## 📚 Mejoras de Documentación
 
-### 13. **Documentación de API**
+### 12. **Documentación de API**
 
 **Problema**: Falta documentación clara de la API.
 
@@ -336,7 +310,7 @@ export class ScopeComponent extends BaseComponent {
 }
 ```
 
-### 14. **Ejemplos y Playground**
+### 13. **Ejemplos y Playground**
 
 **Problema**: Falta de ejemplos prácticos.
 
@@ -348,7 +322,7 @@ export class ScopeComponent extends BaseComponent {
 
 ## 🔄 Mejoras de Compatibilidad
 
-### 15. **Soporte para SSR**
+### 14. **Soporte para SSR**
 
 **Problema**: No hay soporte para Server-Side Rendering.
 
@@ -368,7 +342,7 @@ class HydrationManager {
 }
 ```
 
-### 16. **Compatibilidad con Frameworks**
+### 15. **Compatibilidad con Frameworks**
 
 **Problema**: No hay integración con frameworks populares.
 

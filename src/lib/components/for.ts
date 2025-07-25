@@ -2,7 +2,6 @@ import { BaseComponent } from './base-component';
 import { config } from '../config';
 import { evaluateExpression } from '../utils';
 import { ScopeComponent } from './scope';
-import { forDebugger } from '../utils/for-debugger';
 
 export class ForComponent extends BaseComponent {
   private eachValue: string = '';
@@ -21,18 +20,9 @@ export class ForComponent extends BaseComponent {
     this.initializeTemplate();
     this.listenToUpdates();
     this.render();
-
-    // Only log initial state and check for issues
-    forDebugger.logForState(this);
-    forDebugger.checkForIssues(this);
   }
 
   disconnectedCallback() {
-    // Only log cleanup if there are scopes to clean
-    if (this.renderedScopes.length > 0) {
-      forDebugger.logScopeCleanup(this.renderedScopes);
-    }
-
     // Cleanup rendered scopes
     this.cleanupRenderedScopes();
 
@@ -70,7 +60,7 @@ export class ForComponent extends BaseComponent {
 
   private listenToUpdates() {
     this.setupAttributeObserver('each', () => {
-      this.eachValue = this.getAttribute('each') || '';
+      this.eachValue = this.getRequiredAttribute('each');
       this.render();
     });
 
@@ -89,7 +79,7 @@ export class ForComponent extends BaseComponent {
       this.initializeTemplate();
     }
 
-    if (!this.eachValue || !this.asValue) {
+    if (!this.eachValue) {
       return;
     }
 
@@ -106,15 +96,6 @@ export class ForComponent extends BaseComponent {
     if (!Array.isArray(arrayValue)) {
       console.error(`ForComponent: Signal value must be an array`);
       return;
-    }
-
-    // Only log array changes if the length actually changed
-    const oldLength = this.previousArrayValue?.length || 0;
-    const newLength = arrayValue?.length || 0;
-
-    if (oldLength !== newLength) {
-      forDebugger.logArrayChange(this.previousArrayValue, arrayValue);
-      forDebugger.logRenderCycle(this, arrayValue);
     }
 
     // Cleanup previous rendered scopes
@@ -136,15 +117,15 @@ export class ForComponent extends BaseComponent {
 
       scopeElement.setContext({
         ...(context.$state as Record<string, unknown>),
-        [this.asValue]: item,
         $index: index,
         $item: item,
         $length: arrayValue.length,
       });
 
-      // Only log scope creation for first few items to avoid spam
-      if (index < 3) {
-        forDebugger.logScopeCreation(scopeElement, item, index);
+      if (this.asValue) {
+        scopeElement.setContext({
+          [this.asValue]: item,
+        });
       }
 
       // Move the cloned content into the scope
@@ -156,12 +137,6 @@ export class ForComponent extends BaseComponent {
 
       this.appendChild(scopeElement);
       this.renderedScopes.push(scopeElement);
-
-      // Only log scope state for first scope to avoid spam
-      if (index === 0) {
-        forDebugger.logScopeState(scopeElement);
-        forDebugger.monitorSignalSubscriptions(scopeElement);
-      }
     });
 
     // Update previous array value

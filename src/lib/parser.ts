@@ -1,8 +1,6 @@
 import { config } from './config';
 import { HTML_EVENTS } from './constants';
 import { executeCode } from './utils';
-import { BaseComponent } from './components/base-component';
-import { memoryMonitor } from './utils/memory-monitor';
 
 export class Parser {
   private trackedListeners: Map<HTMLElement, Map<string, EventListener>> =
@@ -56,9 +54,6 @@ export class Parser {
           element.addEventListener(eventName, listener);
           element.removeAttribute(attr.name);
 
-          // Track event listener creation
-          memoryMonitor.trackEventListener(element.tagName);
-
           // Adjust index since we removed an attribute
           i--;
         }
@@ -89,8 +84,6 @@ export class Parser {
     this.trackedListeners.forEach((elementListeners, element) => {
       elementListeners.forEach((listener, event) => {
         element.removeEventListener(event, listener);
-        // Track event listener removal
-        memoryMonitor.untrackEventListener(element.tagName);
       });
       elementListeners.clear();
     });

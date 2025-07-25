@@ -1,12 +1,13 @@
-import { defineConfig } from "vite";
-import tailwindcss from "@tailwindcss/vite";
-import path from "path";
+import { defineConfig } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
+import path from 'path';
 
 export default defineConfig({
-  root: "src",
-  base: "/rumi",
+  root: 'src',
+  base: '/rumi',
   build: {
-    outDir: "../dist",
+    emptyOutDir: true,
+    outDir: '../dist',
   },
   server: {
     port: 5000,
@@ -14,8 +15,8 @@ export default defineConfig({
   },
   resolve: {
     alias: [
-      { find: "@", replacement: path.resolve(__dirname, "src") },
-      { find: "@@", replacement: path.resolve(__dirname) },
+      { find: '@', replacement: path.resolve(__dirname, 'src') },
+      { find: '@@', replacement: path.resolve(__dirname) },
     ],
   },
   plugins: [tailwindcss()],

@@ -1,8 +1,6 @@
 import { config } from '../config';
 import { createSafeContext } from '../utils';
 import { ScopeComponent } from './scope';
-import { memoryMonitor } from '../utils/memory-monitor';
-import { renderOptimizer } from '../utils/render-optimizer';
 
 export class BaseComponent extends HTMLElement {
   protected dependencies: Set<string> = new Set();
@@ -17,8 +15,6 @@ export class BaseComponent extends HTMLElement {
 
   constructor() {
     super();
-    // Track component creation
-    memoryMonitor.trackComponent(this.constructor.name);
   }
 
   protected shouldNotInitialize() {
@@ -106,8 +102,6 @@ export class BaseComponent extends HTMLElement {
           if (signal) {
             signal.subscribe(callback);
             this.dependencies.add(variableName);
-            // Track signal subscription
-            memoryMonitor.trackSignal(variableName);
           }
         });
       }
@@ -125,8 +119,6 @@ export class BaseComponent extends HTMLElement {
           const signal = scopeParent.getSignal(variableName);
           if (signal) {
             signal.unsubscribe(callback);
-            // Track signal unsubscription
-            memoryMonitor.untrackSignal(variableName);
           }
         });
         this.dependencies.clear();
@@ -190,9 +182,6 @@ export class BaseComponent extends HTMLElement {
 
     elementListeners.get(event)!.add(listener);
     element.addEventListener(event, listener, options);
-
-    // Track event listener creation
-    memoryMonitor.trackEventListener(element.tagName);
   }
 
   /**
@@ -210,9 +199,6 @@ export class BaseComponent extends HTMLElement {
       if (eventListeners) {
         eventListeners.delete(listener);
         element.removeEventListener(event, listener, options);
-
-        // Track event listener removal
-        memoryMonitor.untrackEventListener(element.tagName);
 
         if (eventListeners.size === 0) {
           elementListeners.delete(event);
@@ -233,8 +219,6 @@ export class BaseComponent extends HTMLElement {
       elementListeners.forEach((eventListeners, event) => {
         eventListeners.forEach(listener => {
           element.removeEventListener(event, listener);
-          // Track event listener removal
-          memoryMonitor.untrackEventListener(element.tagName);
         });
         eventListeners.clear();
       });
@@ -367,11 +351,6 @@ export class BaseComponent extends HTMLElement {
     const shouldUpdate = this.shouldUpdate(dependencies);
 
     // Track render attempt
-    renderOptimizer.trackRender(
-      this.constructor.name,
-      dependencies,
-      shouldUpdate
-    );
 
     if (!shouldUpdate) {
       return;
@@ -390,15 +369,6 @@ export class BaseComponent extends HTMLElement {
       try {
         renderFunction();
         this.lastRenderTime = now;
-
-        // Track successful render with timing
-        const renderTime = performance.now() - startTime;
-        renderOptimizer.trackRender(
-          this.constructor.name,
-          dependencies,
-          true,
-          renderTime
-        );
       } catch (error) {
         console.error('Error during debounced render:', error);
       } finally {
@@ -416,14 +386,6 @@ export class BaseComponent extends HTMLElement {
     try {
       renderFunction();
       this.lastRenderTime = performance.now();
-
-      // Track forced render
-      renderOptimizer.trackRender(
-        this.constructor.name,
-        [],
-        true,
-        performance.now() - startTime
-      );
     } catch (error) {
       console.error('Error during forced render:', error);
     }
@@ -461,8 +423,5 @@ export class BaseComponent extends HTMLElement {
     this.observers.clear();
     this.eventListeners.clear();
     this.previousValues.clear();
-
-    // Track component destruction
-    memoryMonitor.untrackComponent(this.constructor.name);
   }
 }
