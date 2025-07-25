@@ -15,6 +15,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.11",
     "tailwindcss": "^4.1.11",
+    "terser": "^5.43.1",
     "vite": "^5.0.0"
   }
 }

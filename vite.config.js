@@ -6,8 +6,17 @@ export default defineConfig({
   root: 'src',
   base: '/rumi',
   build: {
+    minify: 'terser',
     emptyOutDir: true,
     outDir: '../dist',
+    reportCompressedSize: true,
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+      mangle: true,
+    },
   },
   server: {
     port: 5000,
