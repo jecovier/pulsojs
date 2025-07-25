@@ -8,6 +8,7 @@ class IfComponent extends BaseComponent {
   private mainContent: HTMLElement | null = null;
   private elseContent: HTMLElement | null = null;
   private hasInitialized: boolean = false;
+  private parser: Parser | null = null;
 
   connectedCallback() {
     this.initializeAttributes();
@@ -17,8 +18,17 @@ class IfComponent extends BaseComponent {
   }
 
   disconnectedCallback() {
-    this.disconnectAttributeObservers();
-    this.unsubscribeFromSignalDependencies(this.render.bind(this));
+    // Cleanup parser
+    if (this.parser) {
+      this.parser.cleanupEventListeners();
+      this.parser = null;
+    }
+
+    // Cleanup content elements
+    this.cleanupContent();
+
+    // Call parent cleanup
+    super.disconnectedCallback();
   }
 
   private initializeAttributes() {
@@ -59,9 +69,9 @@ class IfComponent extends BaseComponent {
     this.appendChild(this.elseContent);
 
     // parse the content of the mainContent and elseContent
-    const parser = new Parser(this);
+    this.parser = new Parser(this);
     const context = this.getSafeContext();
-    parser.replaceEventsWithReactiveListeners(context);
+    this.parser.replaceEventsWithReactiveListeners(context);
 
     this.hasInitialized = true;
   }
@@ -98,6 +108,29 @@ class IfComponent extends BaseComponent {
   private listenToUpdates(): void {
     this.setupAttributeObserver('when', this.render.bind(this));
     this.subscribeToSignalDependencies(this.whenValue, this.render.bind(this));
+  }
+
+  /**
+   * Cleanup content elements and their event listeners
+   */
+  private cleanupContent() {
+    if (this.mainContent) {
+      // Remove all child elements
+      while (this.mainContent.firstChild) {
+        this.mainContent.removeChild(this.mainContent.firstChild);
+      }
+      this.mainContent = null;
+    }
+
+    if (this.elseContent) {
+      // Remove all child elements
+      while (this.elseContent.firstChild) {
+        this.elseContent.removeChild(this.elseContent.firstChild);
+      }
+      this.elseContent = null;
+    }
+
+    this.hasInitialized = false;
   }
 }
 
