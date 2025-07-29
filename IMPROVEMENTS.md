@@ -1,518 +1,580 @@
-# Mejoras Sugeridas para WComp
+# IMPROVEMENTS.md
 
-## Resumen del Proyecto
+## Análisis de Mejoras y Optimizaciones para el Proyecto WComp
 
-WComp es una biblioteca de componentes web reactivos que implementa un sistema de señales (signals) similar a frameworks modernos como SolidJS. El proyecto utiliza Web Components nativos con TypeScript y proporciona componentes como `r-scope`, `r-var`, `r-if`, y `r-for`.
+Este documento contiene todas las mejoras y optimizaciones identificadas en los archivos TypeScript del proyecto.
 
-## Mejoras Prioritarias
+---
 
-### 1. **Gestión de Memoria y Performance**
+## 🚀 Optimizaciones de Rendimiento
 
-#### 1.1 Optimización de Cleanup
+### 1. **Signal Class (`src/lib/utils/signal.ts`)**
+
+#### Problemas Identificados:
+
+- **Memory Leaks**: El método `hasValueChanged` puede ser costoso para objetos grandes
+- **Proxy Overhead**: Creación innecesaria de proxies para objetos simples
+- **Subscription Management**: No hay límite en el número de suscriptores
+
+#### Mejoras Propuestas:
 
 ```typescript
-// Problema actual: Cleanup manual en múltiples lugares
-// Mejora: Implementar un sistema de cleanup automático
-class BaseComponent extends HTMLElement {
-  private cleanupRegistry = new Set<() => void>();
+// Optimización 1: Cache para comparaciones de objetos
+private _comparisonCache = new WeakMap<object, number>();
 
-  protected registerCleanup(cleanupFn: () => void) {
-    this.cleanupRegistry.add(cleanupFn);
+private hasValueChanged(newValue: T): boolean {
+  if (newValue === this._value) return false;
+
+  // Para objetos grandes, usar hash simple
+  if (typeof newValue === 'object' && newValue !== null) {
+    const newHash = this._getObjectHash(newValue);
+    const oldHash = this._getObjectHash(this._value as object);
+    return newHash !== oldHash;
   }
 
-  disconnectedCallback() {
-    this.cleanupRegistry.forEach(cleanup => cleanup());
-    this.cleanupRegistry.clear();
+  return newValue !== this._value;
+}
+
+// Optimización 2: Límite de suscriptores
+private static readonly MAX_SUBSCRIBERS = 1000;
+
+subscribe(subscriber: () => void): void {
+  if (this._subscribers.size >= Signal.MAX_SUBSCRIBERS) {
+    console.warn('Signal: Maximum subscribers reached');
+    return;
   }
+  this._subscribers.add(subscriber);
 }
 ```
 
-#### 1.2 Memoización de Expresiones
+### 2. **InterpreterService (`src/lib/services/interpreter.service.ts`)**
+
+#### Problemas Identificados:
+
+- **Function Cache**: El cache puede crecer indefinidamente
+- **Memory Leaks**: No hay limpieza del cache
+- **Security**: Uso de `new Function()` puede ser peligroso
+
+#### Mejoras Propuestas:
 
 ```typescript
-// Implementar cache inteligente para evaluaciones de expresiones
-class ExpressionCache {
-  private cache = new Map<
-    string,
-    { result: unknown; dependencies: string[]; timestamp: number }
-  >();
-  private maxAge = 5000; // 5 segundos
+export class InterpreterService {
+  private functionCache = new Map<string, Function>();
+  private static readonly MAX_CACHE_SIZE = 1000;
 
-  evaluate(expression: string, context: Record<string, unknown>) {
-    const cacheKey = this.createCacheKey(expression, context);
-    const cached = this.cache.get(cacheKey);
-
-    if (cached && Date.now() - cached.timestamp < this.maxAge) {
-      return cached.result;
+  // Limpieza automática del cache
+  private cleanupCache() {
+    if (this.functionCache.size > InterpreterService.MAX_CACHE_SIZE) {
+      const entries = Array.from(this.functionCache.entries());
+      const toDelete = entries.slice(0, entries.length / 2);
+      toDelete.forEach(([key]) => this.functionCache.delete(key));
     }
+  }
 
-    const result = evaluateExpression(expression, context);
-    this.cache.set(cacheKey, {
-      result,
-      dependencies: Object.keys(context),
-      timestamp: Date.now(),
-    });
-
-    return result;
+  // Validación de código más segura
+  private validateCode(code: string): boolean {
+    const dangerousPatterns = [
+      /eval\s*\(/,
+      /Function\s*\(/,
+      /setTimeout\s*\(/,
+      /setInterval\s*\(/,
+    ];
+    return !dangerousPatterns.some(pattern => pattern.test(code));
   }
 }
 ```
 
-### 2. **Arquitectura y Estructura**
+### 3. **AttributeService (`src/lib/services/attribute.service.ts`)**
 
-#### 2.1 Sistema de Plugins
+#### Problemas Identificados:
 
-```typescript
-// Crear un sistema de plugins para extender funcionalidad
-interface WCompPlugin {
-  name: string;
-  version: string;
-  install(app: WCompApp): void;
-}
+- **Regex Performance**: Expresiones regulares compiladas en cada llamada
+- **Array Iterations**: Múltiples iteraciones sobre los mismos datos
 
-class WCompApp {
-  private plugins = new Map<string, WCompPlugin>();
-
-  use(plugin: WCompPlugin) {
-    this.plugins.set(plugin.name, plugin);
-    plugin.install(this);
-  }
-}
-```
-
-#### 2.2 Gestión de Estado Global
+#### Mejoras Propuestas:
 
 ```typescript
-// Implementar un store global para estado compartido
-class GlobalStore {
-  private static instance: GlobalStore;
-  private stores = new Map<string, Signal<unknown>>();
+export class AttributeService {
+  // Cache de regex compiladas
+  private static readonly EXPRESSION_REGEX = /^{.*}$/;
+  private static readonly WORD_REGEX = /\b(?!\d+\b)\w+\b/g;
 
-  static getInstance(): GlobalStore {
-    if (!GlobalStore.instance) {
-      GlobalStore.instance = new GlobalStore();
-    }
-    return GlobalStore.instance;
-  }
+  // Optimización de iteraciones
+  public getDependencies(context: Record<string, unknown>): string[] {
+    const dependencies = new Set<string>();
+    const contextKeys = new Set(Object.keys(context));
 
-  createStore<T>(name: string, initialValue: T): Signal<T> {
-    const signal = new Signal(initialValue);
-    this.stores.set(name, signal);
-    return signal;
-  }
-
-  getStore<T>(name: string): Signal<T> | undefined {
-    return this.stores.get(name) as Signal<T>;
-  }
-}
-```
-
-### 3. **Mejoras en Componentes**
-
-#### 3.1 Componente Switch/Case
-
-```typescript
-// Agregar soporte para switch/case
-class SwitchComponent extends BaseComponent {
-  private value: string = '';
-  private cases = new Map<string, HTMLElement>();
-  private defaultCase: HTMLElement | null = null;
-
-  connectedCallback() {
-    this.value = this.getRequiredAttribute('value');
-    this.initializeCases();
-    this.render();
-  }
-
-  private initializeCases() {
-    this.querySelectorAll('template[data-case]').forEach(template => {
-      const caseValue = template.getAttribute('data-case');
-      if (caseValue === 'default') {
-        this.defaultCase = this.createCaseElement(template);
-      } else {
-        this.cases.set(caseValue!, this.createCaseElement(template));
+    Array.from(this.attributes).forEach(attr => {
+      if (this.isExpression(attr.value.trim())) {
+        const words = this.extractWords(attr.value);
+        words.forEach(word => {
+          if (contextKeys.has(word)) {
+            dependencies.add(word);
+          }
+        });
       }
     });
+
+    return Array.from(dependencies);
   }
 }
 ```
 
-#### 3.2 Componente Computed
+---
+
+## 🏗️ Mejoras Arquitectónicas
+
+### 1. **Sistema de Eventos Personalizados**
+
+#### Implementación del TODO: Custom Event para State
 
 ```typescript
-// Agregar componente para valores computados
-class ComputedComponent extends BaseComponent {
-  private expression: string = '';
-  private signal: Signal<unknown> | null = null;
+// Nuevo servicio: EventService
+export class EventService {
+  private static instance: EventService;
+  private eventTarget = new EventTarget();
 
-  connectedCallback() {
-    this.expression = this.getRequiredAttribute('expression');
-    this.createComputedSignal();
+  static getInstance(): EventService {
+    if (!EventService.instance) {
+      EventService.instance = new EventService();
+    }
+    return EventService.instance;
   }
 
-  private createComputedSignal() {
-    const scopeParent = this.getScopeParent();
-    const computedName = this.getAttribute('name') || 'computed';
+  emit(eventName: string, data?: any) {
+    this.eventTarget.dispatchEvent(
+      new CustomEvent(eventName, { detail: data })
+    );
+  }
 
-    this.signal = new Signal(null);
-    scopeParent.setContext({ [computedName]: this.signal });
+  on(eventName: string, callback: (event: CustomEvent) => void) {
+    this.eventTarget.addEventListener(eventName, callback as EventListener);
+  }
 
-    this.subscribeToSignalDependencies(this.expression, () => {
-      const result = evaluateExpression(this.expression, this.getSafeContext());
-      this.signal!.value = result;
+  off(eventName: string, callback: (event: CustomEvent) => void) {
+    this.eventTarget.removeEventListener(eventName, callback as EventListener);
+  }
+}
+
+// Modificación en StateComponent
+export class StateComponent extends HTMLElement {
+  connectedCallback() {
+    // ... código existente ...
+
+    // Emitir evento cuando el state esté listo
+    EventService.getInstance().emit('state:ready', {
+      stateId: this.getAttribute('id'),
+      signals: this.signals,
     });
   }
 }
-```
 
-### 4. **Mejoras en el Sistema de Señales**
-
-#### 4.1 Señales Derivadas (Computed Signals)
-
-```typescript
-class ComputedSignal<T> extends Signal<T> {
-  private computation: () => T;
-  private dependencies: Signal<unknown>[] = [];
-
-  constructor(computation: () => T) {
-    super(computation());
-    this.computation = computation;
-    this.setupDependencies();
+// Modificación en reactiveComponent
+export class reactiveComponent extends HTMLElement {
+  connectedCallback() {
+    // Esperar a que el state esté listo
+    EventService.getInstance().on('state:ready', event => {
+      this.initializeComponent();
+    });
   }
 
-  private setupDependencies() {
-    Signal.currentSubscribers.push(this.update.bind(this));
-    this.computation();
-    Signal.currentSubscribers.pop();
-  }
-
-  private update() {
-    this.value = this.computation();
+  private initializeComponent() {
+    // ... lógica de inicialización ...
   }
 }
 ```
 
-#### 4.2 Batch Updates
+### 2. **Hook System para State**
+
+#### Implementación del TODO: Hook para State
 
 ```typescript
-class SignalBatch {
-  private static batchDepth = 0;
-  private static pendingUpdates = new Set<Signal<unknown>>();
-
-  static start() {
-    this.batchDepth++;
+// Nuevo archivo: src/lib/hooks/useState.ts
+export function useState<T>(
+  stateId: string,
+  key: string
+): [T, (value: T) => void] {
+  const stateElement = document.querySelector(
+    `[data-state-id="${stateId}"]`
+  ) as StateComponent;
+  if (!stateElement) {
+    throw new Error(`State with id "${stateId}" not found`);
   }
 
-  static end() {
-    this.batchDepth--;
-    if (this.batchDepth === 0) {
-      this.flush();
+  const signals = stateElement.getSignals();
+  const signal = signals[key] as Signal<T>;
+
+  if (!signal) {
+    throw new Error(`Signal "${key}" not found in state "${stateId}"`);
+  }
+
+  const setValue = (value: T) => {
+    signal.value = value;
+  };
+
+  return [signal.value, setValue];
+}
+
+// Uso:
+// const [name, setName] = useState('myState', 'name');
+// setName('John');
+```
+
+### 3. **Sistema de Lifecycle Hooks**
+
+```typescript
+// Nuevo archivo: src/lib/hooks/lifecycle.ts
+export interface LifecycleHooks {
+  onMount?: () => void;
+  onUnmount?: () => void;
+  onUpdate?: () => void;
+}
+
+export class LifecycleManager {
+  private hooks: LifecycleHooks;
+
+  constructor(hooks: LifecycleHooks) {
+    this.hooks = hooks;
+  }
+
+  mount() {
+    this.hooks.onMount?.();
+  }
+
+  unmount() {
+    this.hooks.onUnmount?.();
+  }
+
+  update() {
+    this.hooks.onUpdate?.();
+  }
+}
+```
+
+---
+
+## 🔧 Mejoras de Código
+
+### 1. **TypeScript Strict Mode**
+
+#### Configuración recomendada en `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true
+  }
+}
+```
+
+### 2. **Error Handling Mejorado**
+
+```typescript
+// Nuevo archivo: src/lib/utils/error-handler.ts
+export class ErrorHandler {
+  static handle(error: Error, context: string) {
+    console.error(`[${context}] Error:`, error);
+
+    // En desarrollo, mostrar error en UI
+    if (process.env.NODE_ENV === 'development') {
+      this.showErrorInUI(error, context);
     }
   }
 
-  static add(signal: Signal<unknown>) {
-    this.pendingUpdates.add(signal);
-  }
-
-  private static flush() {
-    this.pendingUpdates.forEach(signal => signal['_notify']());
-    this.pendingUpdates.clear();
-  }
-}
-```
-
-### 5. **Mejoras en el Parser**
-
-#### 5.1 Soporte para Expresiones Complejas
-
-```typescript
-// Mejorar el parser para soportar expresiones más complejas
-class AdvancedParser extends Parser {
-  private expressionCache = new Map<string, Function>();
-
-  parseExpression(expression: string, context: Record<string, unknown>) {
-    // Soporte para operadores ternarios, funciones, etc.
-    const sanitizedExpression = this.sanitizeExpression(expression);
-    return this.evaluateWithCache(sanitizedExpression, context);
-  }
-
-  private sanitizeExpression(expression: string): string {
-    // Implementar sanitización más robusta
-    return expression.replace(/[<>]/g, '');
+  private static showErrorInUI(error: Error, context: string) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'wcomp-error';
+    errorDiv.innerHTML = `
+      <h3>Error in ${context}</h3>
+      <p>${error.message}</p>
+      <pre>${error.stack}</pre>
+    `;
+    document.body.appendChild(errorDiv);
   }
 }
 ```
 
-#### 5.2 Soporte para Directivas Personalizadas
+### 3. **Logging System**
 
 ```typescript
-// Sistema de directivas personalizadas
-interface Directive {
-  name: string;
-  priority: number;
-  bind(
-    element: HTMLElement,
-    value: string,
-    context: Record<string, unknown>
-  ): void;
-  unbind(element: HTMLElement): void;
+// Nuevo archivo: src/lib/utils/logger.ts
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3,
 }
 
-class DirectiveManager {
-  private directives = new Map<string, Directive>();
+export class Logger {
+  private static level = LogLevel.INFO;
 
-  register(directive: Directive) {
-    this.directives.set(directive.name, directive);
+  static setLevel(level: LogLevel) {
+    Logger.level = level;
   }
 
-  processElement(element: HTMLElement, context: Record<string, unknown>) {
-    [...element.attributes]
-      .filter(attr => attr.name.startsWith('r-'))
-      .forEach(attr => {
-        const directiveName = attr.name.slice(2);
-        const directive = this.directives.get(directiveName);
-        if (directive) {
-          directive.bind(element, attr.value, context);
-        }
-      });
+  static debug(message: string, ...args: any[]) {
+    if (Logger.level <= LogLevel.DEBUG) {
+      console.debug(`[WComp DEBUG] ${message}`, ...args);
+    }
+  }
+
+  static info(message: string, ...args: any[]) {
+    if (Logger.level <= LogLevel.INFO) {
+      console.info(`[WComp INFO] ${message}`, ...args);
+    }
+  }
+
+  static warn(message: string, ...args: any[]) {
+    if (Logger.level <= LogLevel.WARN) {
+      console.warn(`[WComp WARN] ${message}`, ...args);
+    }
+  }
+
+  static error(message: string, ...args: any[]) {
+    if (Logger.level <= LogLevel.ERROR) {
+      console.error(`[WComp ERROR] ${message}`, ...args);
+    }
   }
 }
 ```
 
-### 6. **Mejoras en el Sistema de Eventos**
+---
 
-#### 6.1 Event Modifiers
+## 🎯 Optimizaciones Específicas
+
+### 1. **Component.ts - Memory Management**
 
 ```typescript
-// Soporte para modificadores de eventos (como Vue)
-class EventModifierParser {
-  private static modifiers = {
-    prevent: (event: Event) => event.preventDefault(),
-    stop: (event: Event) => event.stopPropagation(),
-    once: (event: Event) =>
-      event.target?.removeEventListener(event.type, arguments.callee),
-    self: (event: Event) =>
-      event.target === event.currentTarget ? null : event.preventDefault(),
-  };
+export class reactiveComponent extends HTMLElement {
+  // Usar WeakMap para evitar memory leaks
+  private eventListeners = new WeakMap<
+    HTMLElement,
+    Map<string, EventListener>
+  >();
 
-  static parseEventString(eventString: string): {
-    event: string;
-    modifiers: string[];
-  } {
-    const parts = eventString.split('.');
+  // Debounce para render
+  private renderDebounced = this.debounce(this.render.bind(this), 16);
+
+  private debounce(func: Function, wait: number) {
+    let timeout: number;
+    return function executedFunction(...args: any[]) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+}
+```
+
+### 2. **ForComponent - Virtual Scrolling**
+
+```typescript
+// Para listas grandes, implementar virtual scrolling
+export class VirtualForComponent extends ForComponent {
+  private itemHeight = 50;
+  private visibleItems = 10;
+  private scrollContainer: HTMLElement;
+
+  private renderVirtual() {
+    const scrollTop = this.scrollContainer.scrollTop;
+    const startIndex = Math.floor(scrollTop / this.itemHeight);
+    const endIndex = Math.min(
+      startIndex + this.visibleItems,
+      this.items.length
+    );
+
+    // Renderizar solo elementos visibles
+    this.renderVisibleItems(startIndex, endIndex);
+  }
+}
+```
+
+### 3. **StateService - Caching Inteligente**
+
+```typescript
+export class StateService {
+  private stateCache = new Map<string, StateComponent>();
+
+  public getParentState(): StateComponent {
+    const cacheKey = this.element.tagName + this.element.className;
+
+    if (this.stateParentCache) {
+      return this.stateParentCache;
+    }
+
+    // Buscar en cache primero
+    if (this.stateCache.has(cacheKey)) {
+      const cached = this.stateCache.get(cacheKey)!;
+      if (cached.isConnected) {
+        this.stateParentCache = cached;
+        return cached;
+      } else {
+        this.stateCache.delete(cacheKey);
+      }
+    }
+
+    const scopeParent = this.element.closest(config.components.state);
+    if (!scopeParent) {
+      throw new Error(`State component not found`);
+    }
+
+    this.stateParentCache = scopeParent as StateComponent;
+    this.stateCache.set(cacheKey, this.stateParentCache);
+    return this.stateParentCache;
+  }
+}
+```
+
+---
+
+## 📊 Métricas y Monitoreo
+
+### 1. **Performance Monitoring**
+
+```typescript
+// Nuevo archivo: src/lib/utils/performance.ts
+export class PerformanceMonitor {
+  private static metrics = new Map<string, number[]>();
+
+  static startTimer(name: string): () => void {
+    const start = performance.now();
+    return () => {
+      const duration = performance.now() - start;
+      if (!this.metrics.has(name)) {
+        this.metrics.set(name, []);
+      }
+      this.metrics.get(name)!.push(duration);
+
+      // Log si es lento
+      if (duration > 16) {
+        // 60fps threshold
+        Logger.warn(`Slow operation: ${name} took ${duration.toFixed(2)}ms`);
+      }
+    };
+  }
+
+  static getMetrics(name: string) {
+    const values = this.metrics.get(name) || [];
     return {
-      event: parts[0],
-      modifiers: parts.slice(1),
-    };
-  }
-
-  static createModifiedListener(
-    originalListener: EventListener,
-    modifiers: string[]
-  ): EventListener {
-    return (event: Event) => {
-      modifiers.forEach(modifier => {
-        const modifierFn =
-          this.modifiers[modifier as keyof typeof this.modifiers];
-        if (modifierFn) modifierFn(event);
-      });
-      originalListener(event);
+      count: values.length,
+      average: values.reduce((a, b) => a + b, 0) / values.length,
+      min: Math.min(...values),
+      max: Math.max(...values),
     };
   }
 }
 ```
 
-### 7. **Mejoras en el Sistema de Testing**
-
-#### 7.1 Testing Utilities
+### 2. **Memory Usage Tracking**
 
 ```typescript
-// Utilidades para testing
-class WCompTestUtils {
-  static createTestScope(state: Record<string, unknown> = {}): ScopeComponent {
-    const scope = document.createElement('r-scope') as ScopeComponent;
-    scope.setAttribute('state', JSON.stringify(state));
-    document.body.appendChild(scope);
-    return scope;
-  }
-
-  static waitForRender(component: BaseComponent): Promise<void> {
-    return new Promise(resolve => {
-      const observer = new MutationObserver(() => {
-        observer.disconnect();
-        resolve();
+// Nuevo archivo: src/lib/utils/memory.ts
+export class MemoryTracker {
+  static track() {
+    if ('memory' in performance) {
+      const memory = (performance as any).memory;
+      Logger.debug('Memory usage:', {
+        used: `${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
+        total: `${(memory.totalJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
+        limit: `${(memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)}MB`,
       });
-      observer.observe(component, { childList: true, subtree: true });
-    });
-  }
-
-  static cleanup() {
-    document
-      .querySelectorAll('r-scope, r-var, r-if, r-for')
-      .forEach(el => el.remove());
+    }
   }
 }
 ```
 
-### 8. **Mejoras en el Build System**
+---
 
-#### 8.1 Tree Shaking Optimizado
+## 🧪 Testing y Debugging
+
+### 1. **Debug Mode**
 
 ```typescript
-// Configuración de Vite para mejor tree shaking
-// vite.config.js
-export default {
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          core: ['src/lib/main.ts'],
-          components: ['src/lib/components/'],
-          utils: ['src/lib/utils/'],
-        },
-      },
-    },
+// Modificación en config.ts
+export const config = {
+  debug: process.env.NODE_ENV === 'development',
+  components: {
+    component: 'x-component',
+    state: 'x-state',
+    var: 'x-var',
+    for: 'x-for',
+  },
+  performance: {
+    enableMetrics: true,
+    logSlowOperations: true,
+    trackMemory: true,
   },
 };
 ```
 
-#### 8.2 Bundle Analysis
+### 2. **Component Inspector**
 
 ```typescript
-// Agregar análisis de bundle
-// package.json
-{
-  "scripts": {
-    "analyze": "vite-bundle-analyzer",
-    "build:analyze": "npm run build && npm run analyze"
-  }
-}
-```
+// Nuevo archivo: src/lib/debug/inspector.ts
+export class ComponentInspector {
+  static inspect(element: HTMLElement) {
+    if (!config.debug) return;
 
-### 9. **Mejoras en la Documentación**
-
-#### 9.1 JSDoc Completo
-
-```typescript
-/**
- * Base class for all WComp components
- * @abstract
- * @extends HTMLElement
- */
-export abstract class BaseComponent extends HTMLElement {
-  /**
-   * Set of signal dependencies for this component
-   * @protected
-   */
-  protected dependencies = new Set<string>();
-
-  /**
-   * Evaluates an expression in the current context
-   * @param expression - The expression to evaluate
-   * @returns The result of the evaluation
-   * @throws {Error} If the expression cannot be evaluated
-   */
-  protected evaluateExpression(expression: string): unknown {
-    // Implementation
-  }
-}
-```
-
-#### 9.2 Ejemplos Interactivos
-
-```html
-<!-- Crear ejemplos en la documentación -->
-<r-scope state="{ count: 0, items: ['a', 'b', 'c'] }">
-  <button r-onclick="count++">Increment</button>
-  <r-var name="count"></r-var>
-
-  <r-for each="items" as="item">
-    <div r-onclick="console.log(item)">{{ item }}</div>
-  </r-for>
-</r-scope>
-```
-
-### 10. **Mejoras en el Sistema de Errores**
-
-#### 10.1 Error Boundaries
-
-```typescript
-class ErrorBoundary extends BaseComponent {
-  private hasError = false;
-  private errorMessage = '';
-
-  connectedCallback() {
-    this.setupErrorHandling();
-  }
-
-  private setupErrorHandling() {
-    const originalRender = this.render.bind(this);
-    this.render = () => {
-      try {
-        originalRender();
-      } catch (error) {
-        this.handleError(error);
-      }
+    const info = {
+      tagName: element.tagName,
+      attributes: Array.from(element.attributes).map(attr => ({
+        name: attr.name,
+        value: attr.value,
+      })),
+      children: element.children.length,
+      signals:
+        element instanceof StateComponent
+          ? Object.keys(element.getSignals())
+          : [],
     };
-  }
 
-  private handleError(error: Error) {
-    this.hasError = true;
-    this.errorMessage = error.message;
-    this.innerHTML = `<div class="error">Error: ${this.errorMessage}</div>`;
+    console.log('Component Info:', info);
   }
 }
 ```
 
-#### 10.2 Logging Mejorado
+---
 
-```typescript
-class Logger {
-  private static instance: Logger;
-  private logLevel: 'debug' | 'info' | 'warn' | 'error' = 'info';
+## 📝 Resumen de Prioridades
 
-  static getInstance(): Logger {
-    if (!Logger.instance) {
-      Logger.instance = new Logger();
-    }
-    return Logger.instance;
-  }
+### 🔴 Alta Prioridad (Crítico)
 
-  debug(message: string, ...args: unknown[]) {
-    if (this.logLevel === 'debug') {
-      console.debug(`[WComp Debug] ${message}`, ...args);
-    }
-  }
+1. **Memory Leaks**: Implementar limpieza automática en Signal y InterpreterService
+2. **Error Handling**: Sistema robusto de manejo de errores
+3. **Custom Events**: Implementar el sistema de eventos para state loading
 
-  error(message: string, error?: Error) {
-    console.error(`[WComp Error] ${message}`, error);
-  }
-}
-```
+### 🟡 Media Prioridad (Importante)
 
-## Prioridades de Implementación
+1. **Performance Monitoring**: Métricas de rendimiento
+2. **TypeScript Strict Mode**: Configuración más estricta
+3. **Hook System**: Implementar useState hook
 
-### Alta Prioridad
+### 🟢 Baja Prioridad (Mejoras)
 
-1. **Gestión de memoria mejorada** - Evitar memory leaks
-2. **Sistema de cleanup automático** - Simplificar el manejo de recursos
-3. **Memoización de expresiones** - Mejorar performance
-4. **Error boundaries** - Mejor experiencia de desarrollo
+1. **Virtual Scrolling**: Para listas grandes
+2. **Debug Tools**: Inspector de componentes
+3. **Logging System**: Sistema de logs estructurado
 
-### Media Prioridad
+---
 
-1. **Señales derivadas** - Funcionalidad avanzada
-2. **Sistema de plugins** - Extensibilidad
-3. **Componente switch/case** - Más opciones de control de flujo
-4. **Event modifiers** - Mejor UX para eventos
+## 🚀 Próximos Pasos
 
-### Baja Prioridad
+1. **Implementar Custom Events** para el sistema de state
+2. **Agregar Memory Management** en Signal class
+3. **Configurar TypeScript Strict Mode**
+4. **Implementar Error Handling** robusto
+5. **Crear sistema de Performance Monitoring**
+6. **Desarrollar Hook System** para state management
 
-1. **Bundle analysis** - Optimización de build
-2. **Testing utilities** - Mejor testing
-3. **Documentación interactiva** - Mejor DX
-4. **Logging avanzado** - Debugging
+---
 
-## Conclusión
-
-Estas mejoras transformarían WComp en una biblioteca más robusta, performante y fácil de usar. La implementación debería seguir un enfoque incremental, priorizando las mejoras de memoria y performance primero, seguidas por las funcionalidades avanzadas y finalmente las mejoras de DX.
+_Documento generado automáticamente basado en análisis de código TypeScript_

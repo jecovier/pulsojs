@@ -1,48 +1,71 @@
 import { Signal } from '../utils/signal';
 
 export class InterpreterService {
-  private functionCache = new Map<string, Function>();
-  private context: Record<string, unknown> = {};
+  private cache = new Map<string, Function>();
+  private readonly baseKeys: string[];
+  private readonly baseVals: unknown[];
 
-  constructor(context: Record<string, unknown>) {
-    this.context = context;
+  constructor(
+    private base: Record<string, unknown> = {},
+    private readonly max = 1000
+  ) {
+    this.baseKeys = Object.keys(base);
+    this.baseVals = Object.values(base);
   }
 
-  public executeCode(
+  executeCode<R = unknown>(
     code: string,
-    additionalContext: Record<string, unknown> = {}
-  ) {
-    const context = {
-      ...this.context,
-      ...additionalContext,
-    };
+    add: Record<string, unknown> = {}
+  ): R | null {
+    if (!this.isSafe(code)) {
+      console.error('InterpreterService: code blocked by validator');
+      return null;
+    }
+
+    const context = { ...this.base, ...add };
     const contextKeys = Object.keys(context);
-    const contextValues = Object.values(context);
-    const cacheKey = `${code}:${contextKeys.join(',')}`;
+    const contextVals = Object.values(context);
+
+    const cacheKey = code + '|' + contextKeys.join(',');
 
     try {
-      let executeFn = this.functionCache.get(cacheKey);
-
-      if (!executeFn) {
-        executeFn = new Function(...contextKeys, code);
-        this.functionCache.set(cacheKey, executeFn);
+      let fn = this.cache.get(cacheKey);
+      if (fn) {
+        this.cache.delete(cacheKey);
+        this.cache.set(cacheKey, fn);
+      } else {
+        fn = new Function(...contextKeys, '"use strict";\n' + code);
+        this.setLRU(cacheKey, fn);
       }
 
-      const result = executeFn.bind(null, ...contextValues)();
-
-      if (result instanceof Signal) {
-        return result.value;
-      }
-
-      return result;
-    } catch (error) {
-      console.error('Error in code execution:', error);
+      const out = fn.bind(null, ...contextVals)();
+      return out instanceof Signal ? out.value : (out as R);
+    } catch (err) {
+      console.error('InterpreterService: execution error for', cacheKey, err);
       return null;
     }
   }
 
-  public evaluateExpression(expression: string) {
-    const result = this.executeCode(`return ${expression};`);
-    return result;
+  evaluateExpression<R = unknown>(
+    expression: string,
+    add: Record<string, unknown> = {}
+  ): R | null {
+    return this.executeCode<R>('return (' + expression + ');', add);
+  }
+
+  clearCache(): void {
+    this.cache.clear();
+  }
+
+  private setLRU(key: string, fn: Function) {
+    if (this.cache.size >= this.max) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) this.cache.delete(firstKey);
+    }
+    this.cache.set(key, fn);
+  }
+
+  private isSafe(s: string): boolean {
+    return !/(?:^|[^\w$])(eval|Function|setTimeout|setInterval)\s*\(/.test(s);
   }
 }

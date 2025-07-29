@@ -1,5 +1,7 @@
 TODO:
 =====================================================
+-data-aschild
+
 - que el state funcione con un custom event de tal forma
 que cuando se cargue el state se dispare
     - todos los componentes deben escuchar este evento

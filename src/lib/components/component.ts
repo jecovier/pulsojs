@@ -7,7 +7,6 @@ import { Signal } from '../utils/signal';
 
 export class reactiveComponent extends HTMLElement {
   private attributeService: AttributeService;
-  private dependencies: string[] = [];
   private eventListeners: Map<string, EventListener>;
   private attributesMap: Map<string, string>;
   private interpreterService: InterpreterService;
@@ -15,6 +14,7 @@ export class reactiveComponent extends HTMLElement {
   private stateService: StateService;
   private targetElement: HTMLElement;
   private renderService: RenderService;
+  private unsubscribeFunctions: Map<string, () => void> = new Map();
 
   constructor() {
     super();
@@ -43,7 +43,7 @@ export class reactiveComponent extends HTMLElement {
   disconnectedCallback() {
     this.disconnectEvents();
     this.disconnectAttributes();
-    this.unsubscribeFromState(this.state);
+    this.unsubscribeFromState();
   }
 
   private subscribeToState(state: State) {
@@ -51,18 +51,17 @@ export class reactiveComponent extends HTMLElement {
     dependencies.forEach(dependency => {
       const signal = state.$state[dependency] as Signal<unknown>;
       if (signal) {
-        signal.subscribe(this.render.bind(this));
+        const unsubscribe = signal.subscribe(this.render.bind(this));
+        this.unsubscribeFunctions.set(dependency, unsubscribe);
       }
     });
   }
 
-  private unsubscribeFromState(state: State) {
-    this.dependencies.forEach(dependency => {
-      const signal = state.$state[dependency] as Signal<unknown>;
-      if (signal) {
-        signal.unsubscribe(this.render.bind(this));
-      }
+  private unsubscribeFromState() {
+    this.unsubscribeFunctions.forEach(unsubscribe => {
+      unsubscribe();
     });
+    this.unsubscribeFunctions.clear();
   }
 
   private connectAttributes() {

@@ -1,143 +1,88 @@
-export class Signal<T> {
+type Subscriber = () => void;
+
+export class Signal<T> extends EventTarget {
   private _value: T;
-  private _subscribers = new Set<() => void>();
-  private _previousValue: T | undefined;
-  private _proxy: Signal<T> | null = null;
+  private _prev?: T;
+  private _subs = new Set<Subscriber>();
+  private _scheduled = false;
 
-  constructor(initialValue: T) {
-    this._value = initialValue;
-    this._previousValue = undefined;
+  constructor(initial: T) {
+    super();
+    this._value = initial;
 
-    // Only create proxy for objects
-    if (typeof initialValue === 'object' && initialValue !== null) {
-      this._proxy = this.createProxy();
-      return this._proxy;
-    }
-
-    return this;
+    return initial && typeof initial === 'object' ? this._createProxy() : this;
   }
 
-  private createProxy(): Signal<T> {
+  private _createProxy(): Signal<T> {
     return new Proxy(this, {
-      get: (target, prop, receiver) => {
-        if (prop in target || typeof prop === 'symbol') {
-          return Reflect.get(target, prop, receiver);
-        }
-
-        const value = target._value;
-        if (typeof value === 'object' && value && prop in value) {
-          return (value as any)[prop];
-        }
-
-        return undefined;
-      },
+      get: (target, prop, receiver) =>
+        prop in target || typeof prop === 'symbol'
+          ? Reflect.get(target, prop, receiver)
+          : (target._value as any)?.[prop],
       set: (target, prop, value, receiver) => {
-        if (prop in target || typeof prop === 'symbol') {
+        if (prop in target || typeof prop === 'symbol')
           return Reflect.set(target, prop, value, receiver);
-        }
-
-        const currentValue = target._value;
-        if (typeof currentValue === 'object' && currentValue) {
-          (currentValue as any)[prop] = value;
+        if (typeof target._value === 'object' && target._value) {
+          (target._value as any)[prop] = value;
           target._notify();
           return true;
         }
-
         return false;
       },
     });
   }
 
-  [Symbol.toPrimitive](hint: string) {
-    switch (hint) {
-      case 'string':
-        return String(this.value);
-      case 'number':
-        return Number(this.value);
-      default:
-        return this.value;
-    }
-  }
-
-  [Symbol.iterator]() {
-    if (!Array.isArray(this.value)) {
-      console.error('Signal value is not an array');
-      return [][Symbol.iterator]();
-    }
-    return this.value[Symbol.iterator]();
-  }
-
   get value(): T {
-    // Auto-subscribe if there's an active subscriber context
-    const currentSubscriber = Signal.currentSubscribers.at(-1);
-    if (currentSubscriber) {
-      this._subscribers.add(currentSubscriber);
-    }
     return this._value;
   }
 
-  set value(newValue: T) {
-    if (this.hasValueChanged(newValue)) {
-      this._previousValue = this._value;
-      this._value = newValue;
-      this._notify();
-    }
-  }
-
-  private hasValueChanged(newValue: T): boolean {
-    if (newValue === this._value) return false;
-    if (newValue == null || this._value == null)
-      return newValue !== this._value;
-    if (typeof newValue !== 'object' || typeof this._value !== 'object') {
-      return newValue !== this._value;
-    }
-
-    // Handle arrays
-    if (Array.isArray(newValue) && Array.isArray(this._value)) {
-      if (newValue.length !== this._value.length) return true;
-      return newValue.some((item, index) => item !== this._value[index]);
-    }
-
-    if (Array.isArray(newValue) || Array.isArray(this._value)) return true;
-
-    // Handle objects
-    const newKeys = Object.keys(newValue as object);
-    const currentKeys = Object.keys(this._value as object);
-
-    if (newKeys.length !== currentKeys.length) return true;
-
-    return newKeys.some(
-      key => (newValue as any)[key] !== (this._value as any)[key]
-    );
+  set value(nv: T) {
+    if (Object.is(nv, this._value)) return;
+    this._prev = this._value;
+    this._value = nv;
+    this._notify();
   }
 
   get previousValue(): T | undefined {
-    return this._previousValue;
+    return this._prev;
   }
 
-  get hasPreviousValue(): boolean {
-    return this._previousValue !== undefined;
+  peek(): T {
+    return this._value;
   }
 
-  get changeHistory(): { current: T; previous: T | undefined } {
-    return { current: this._value, previous: this._previousValue };
-  }
-
-  subscribe(subscriber: () => void): void {
-    this._subscribers.add(subscriber);
-  }
-
-  unsubscribe(subscriber: () => void): void {
-    this._subscribers.delete(subscriber);
+  subscribe(fn: Subscriber, opts?: { signal?: AbortSignal }): () => void {
+    this._subs.add(fn);
+    if (opts?.signal) {
+      const off = () => this._subs.delete(fn);
+      opts.signal.aborted
+        ? off()
+        : opts.signal.addEventListener('abort', off, { once: true });
+    }
+    return () => this._subs.delete(fn);
   }
 
   unsubscribeAll(): void {
-    this._subscribers.clear();
+    this._subs.clear();
+  }
+
+  [Symbol.iterator]() {
+    const v = this.value as any;
+    return Array.isArray(v) ? v[Symbol.iterator]() : [][Symbol.iterator]();
   }
 
   private _notify(): void {
-    this._subscribers.forEach(subscriber => subscriber());
+    if (this._scheduled || this._subs.size === 0) return;
+    this._scheduled = true;
+    queueMicrotask(() => {
+      this._scheduled = false;
+      this._subs.forEach(s => s());
+      this.dispatchEvent(new Event('change'));
+    });
   }
 
-  static currentSubscribers: Array<() => void> = [];
+  [Symbol.toPrimitive](hint: string) {
+    const v = this.value as any;
+    return hint === 'string' ? String(v) : hint === 'number' ? Number(v) : v;
+  }
 }

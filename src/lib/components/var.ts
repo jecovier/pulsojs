@@ -9,6 +9,7 @@ export class VarComponent extends HTMLElement {
   private interpreterService: InterpreterService;
   private varName: string = '';
   private expression: string = '';
+  private unsubscribeFunction?: () => void;
 
   constructor() {
     super();
@@ -26,16 +27,15 @@ export class VarComponent extends HTMLElement {
   }
 
   disconnectedCallback() {
-    const signal = this.state.$state[this.varName] as Signal<unknown>;
-    if (signal) {
-      signal.unsubscribe(this.render.bind(this));
+    if (this.unsubscribeFunction) {
+      this.unsubscribeFunction();
     }
   }
 
   private subscribeToStateChanges() {
     const signal = this.state.$state[this.varName] as Signal<unknown>;
     if (signal) {
-      signal.subscribe(this.render.bind(this));
+      this.unsubscribeFunction = signal.subscribe(this.render.bind(this));
     }
   }
 
