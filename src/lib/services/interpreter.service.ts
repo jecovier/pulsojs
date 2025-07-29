@@ -8,12 +8,19 @@ export class InterpreterService {
     this.context = context;
   }
 
-  public executeCode(code: string) {
-    try {
-      const contextKeys = Object.keys(this.context);
-      const contextValues = Object.values(this.context);
+  public executeCode(
+    code: string,
+    additionalContext: Record<string, unknown> = {}
+  ) {
+    const context = {
+      ...this.context,
+      ...additionalContext,
+    };
+    const contextKeys = Object.keys(context);
+    const contextValues = Object.values(context);
+    const cacheKey = `${code}:${contextKeys.join(',')}`;
 
-      const cacheKey = `${code}:${contextKeys.join(',')}`;
+    try {
       let executeFn = this.functionCache.get(cacheKey);
 
       if (!executeFn) {

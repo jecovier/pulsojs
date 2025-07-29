@@ -54,18 +54,18 @@
           <x-var name></x-var>
         </x-component>
 
-        <x-for data-foreach="{$state.array}">
+        <x-for data-foreach="{$state.array}" data-as="profile">
           <template>
-            <x-var $item.label></x-var>:
-            <x-var $item.value.value></x-var>
-            <x-component
-              onclick="{console.log($state.$item.value)}"
-              class="btn"
-            >
+            <x-var profile.label></x-var>:
+            <x-var profile.value></x-var>
+            <x-component onclick="{console.log($state.$item)}" class="btn">
               log
             </x-component>
           </template>
         </x-for>
+
+        <x-component data-as="input" data-bind="{$state.name}"></x-component>
+        <x-component data-as="textarea" data-bind="{$state.name}"></x-component>
       </div>
     </x-state>
     <script>

@@ -95,6 +95,10 @@ export class RenderService {
     attributes.forEach((value, key) => {
       const result = this.interpreterService.evaluateExpression(value);
       element.setAttribute(key, result as string);
+
+      if (key === 'value') {
+        (element as HTMLInputElement).value = result as string;
+      }
     });
   }
 

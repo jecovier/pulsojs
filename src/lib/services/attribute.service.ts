@@ -4,6 +4,7 @@ export enum RESERVED_ATTRIBUTES {
   SHOW = 'data-show',
   FOREACH = 'data-foreach',
   VALUE = 'data-value',
+  BIND = 'data-bind',
 }
 
 // Cached sets for better performance
@@ -29,6 +30,7 @@ export class AttributeService {
 
   constructor(attributes: NamedNodeMap) {
     this.attributes = attributes;
+    this.bindValue();
   }
 
   public iterateReactiveAttributes(
@@ -113,5 +115,20 @@ export class AttributeService {
 
   private isExpression(value: string): boolean {
     return value.startsWith('{') && value.endsWith('}');
+  }
+
+  private bindValue() {
+    const bindAttribute = this.get(RESERVED_ATTRIBUTES.BIND);
+    if (!bindAttribute) return;
+
+    const valueAttr = document.createAttribute('value');
+    valueAttr.value = `{${bindAttribute}}`;
+    this.attributes.setNamedItem(valueAttr);
+
+    const onInputAttr = document.createAttribute('oninput');
+    onInputAttr.value = `{${bindAttribute} = $event.target.value}`;
+    this.attributes.setNamedItem(onInputAttr);
+
+    this.remove(RESERVED_ATTRIBUTES.BIND);
   }
 }

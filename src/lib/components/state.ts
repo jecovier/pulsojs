@@ -5,7 +5,8 @@ import { parseStringToObject } from '../utils';
 type Signals = Record<string, Signal<unknown>>;
 
 export class StateComponent extends HTMLElement {
-  private context: Signals = {};
+  private signals: Signals = {};
+  private context: Record<string, unknown> = {};
   private isDisconnected = false;
   private isNested = false;
 
@@ -32,8 +33,16 @@ export class StateComponent extends HTMLElement {
     }
   }
 
-  public getSignals(): Signals {
+  public setContext(context: Record<string, unknown>) {
+    this.context = context;
+  }
+
+  public getContext(): Record<string, unknown> {
     return this.context;
+  }
+
+  public getSignals(): Signals {
+    return this.signals;
   }
 
   public setSignals(context: Record<string, unknown>) {
@@ -45,20 +54,20 @@ export class StateComponent extends HTMLElement {
     // Process context entries
     Object.entries(context).forEach(([key, value]) => {
       if (value instanceof Signal) {
-        this.context[key] = value;
+        this.signals[key] = value;
       } else if (!this.isDisconnected) {
-        this.context[key] = new Signal(value);
+        this.signals[key] = new Signal(value);
       }
     });
   }
 
   private cleanupSignals() {
-    Object.values(this.context).forEach(signal => {
+    Object.values(this.signals).forEach(signal => {
       if (signal instanceof Signal) {
         signal.unsubscribeAll();
       }
     });
-    this.context = {};
+    this.signals = {};
   }
 
   public markAsNested() {

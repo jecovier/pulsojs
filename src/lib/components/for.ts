@@ -96,12 +96,13 @@ class ForComponent extends HTMLElement {
         config.components.state
       ) as StateComponent;
       stateElement.markAsNested();
-      stateElement.setSignals({
+      stateElement.setSignals(this.state.$state);
+      stateElement.setContext({
         $item: item,
         $index: index,
         $length: foreachArray.length,
         $array: foreachArray,
-        ...this.state.$state,
+        ...(asAttribute ? { [asAttribute]: item } : {}),
       });
 
       const templateContent = this.template?.content.cloneNode(true);

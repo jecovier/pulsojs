@@ -103,8 +103,10 @@ export class reactiveComponent extends HTMLElement {
     });
   }
 
-  private handleEvent(_event: Event, expression: string) {
-    this.interpreterService.executeCode(expression);
+  private handleEvent(event: Event, expression: string) {
+    this.interpreterService.executeCode(expression, {
+      $event: event,
+    });
   }
 
   private render() {

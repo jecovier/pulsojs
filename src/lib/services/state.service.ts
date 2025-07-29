@@ -31,8 +31,12 @@ export class StateService {
 
   public getClosestState(): State {
     const signals = this.getParentState().getSignals();
+    const context = this.getParentState().getContext();
     return {
-      $state: this.createSignalProxy(signals),
+      $state: this.createSignalProxy({
+        ...signals,
+        ...context,
+      }),
     };
   }
 

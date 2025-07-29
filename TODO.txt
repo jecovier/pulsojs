@@ -1,9 +1,5 @@
 TODO:
-
-- como hacer bind de los inputs, otro componente? o se
-se podria hacer con x-component
-    - value={$.var} onchange={(event) => $.var = event.value}
-
+=====================================================
 - que el state funcione con un custom event de tal forma
 que cuando se cargue el state se dispare
     - todos los componentes deben escuchar este evento
