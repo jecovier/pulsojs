@@ -1,148 +1,119 @@
-import { BaseComponent } from './base-component';
 import { config } from '../config';
-import { evaluateExpression } from '../utils';
-import { ScopeComponent } from './scope';
+import {
+  AttributeService,
+  RESERVED_ATTRIBUTES,
+} from '../services/attribute.service';
+import { InterpreterService } from '../services/interpreter.service';
+import { RenderService } from '../services/render.service';
+import { StateService } from '../services/state.service';
+import { State } from '../services/state.service';
+import { Signal } from '../utils/signal';
+import { StateComponent } from './state';
 
-export class ForComponent extends BaseComponent {
-  private eachValue: string = '';
-  private asValue: string = '';
-  private template: HTMLTemplateElement | null = null;
-  private hasInitialized: boolean = false;
-  private renderedScopes: ScopeComponent[] = [];
-  private previousArrayValue: any[] = [];
+class ForComponent extends HTMLElement {
+  private interpreterService: InterpreterService;
+  private attributeService: AttributeService;
+  private stateService: StateService;
+  private state: State;
+  private renderService: RenderService;
+  private template: HTMLTemplateElement | null;
 
   constructor() {
     super();
+    this.attributeService = new AttributeService(this.attributes);
+    this.stateService = new StateService(this);
+    this.state = this.stateService.getClosestState();
+    this.interpreterService = new InterpreterService(this.state);
+    this.renderService = new RenderService(
+      this.attributeService,
+      this.interpreterService
+    );
   }
 
   connectedCallback() {
-    this.initializeAttributes();
-    this.initializeTemplate();
-    this.listenToUpdates();
+    this.template = this.renderService.getTemplate(this);
+    if (!this.template) {
+      console.error('ForComponent: No template found');
+      return;
+    }
+
+    this.subscribeToState(this.state);
     this.render();
   }
 
   disconnectedCallback() {
-    // Cleanup rendered scopes
-    this.cleanupRenderedScopes();
-
-    // Call parent cleanup
-    super.disconnectedCallback();
+    this.unsubscribeFromState(this.state);
   }
 
-  private initializeAttributes() {
-    this.eachValue = this.getRequiredAttribute('each');
-    this.asValue = this.getAttribute('as') || '';
+  private subscribeToState(state: State) {
+    const dependencies = this.attributeService.getDependencies(state.$state);
+    dependencies.forEach(dependency => {
+      const signal = state.$state[dependency] as Signal<unknown>;
+      if (signal) {
+        signal.subscribe(this.render.bind(this));
+      }
+    });
   }
 
-  private initializeTemplate() {
-    if (this.hasInitialized) return;
-
-    // Find the default template (template without id)
-    this.template = this.querySelector(
-      'template:not([id])'
-    ) as HTMLTemplateElement;
-
-    if (!this.template) {
-      console.error('ForComponent: No default template found');
-      return;
-    }
-
-    // Clear existing content
-    this.innerHTML = '';
-
-    this.hasInitialized = true;
-  }
-
-  private listenToUpdates() {
-    const updateCallback = () => {
-      this.initializeAttributes();
-      this.render();
-    };
-
-    this.setupAttributeObserver('each', updateCallback);
-    this.setupAttributeObserver('as', updateCallback);
-    this.subscribeToSignalDependencies(this.eachValue, () => {
-      this.render();
+  private unsubscribeFromState(state: State) {
+    const dependencies = this.attributeService.getDependencies(state.$state);
+    dependencies.forEach(dependency => {
+      const signal = state.$state[dependency] as Signal<unknown>;
+      if (signal) {
+        signal.unsubscribe(this.render.bind(this));
+      }
     });
   }
 
   private render() {
-    if (!this.hasInitialized) {
-      this.initializeTemplate();
-    }
-
-    if (!this.eachValue) {
+    const foreachAttribute = this.attributeService.get(
+      RESERVED_ATTRIBUTES.FOREACH
+    );
+    if (!foreachAttribute) {
+      console.error('ForComponent: No foreach attribute found');
       return;
     }
 
-    const context = this.getSafeContext();
-    const arrayValue = evaluateExpression(this.eachValue, context);
-
-    if (!arrayValue) {
-      console.error(
-        `ForComponent: Could not evaluate expression '${this.eachValue}'`
-      );
+    const foreachArray =
+      this.interpreterService.evaluateExpression(foreachAttribute);
+    if (!foreachArray) {
+      console.error('ForComponent: No foreach array found');
       return;
     }
 
-    if (!Array.isArray(arrayValue)) {
-      console.error(`ForComponent: Signal value must be an array`);
+    if (!Array.isArray(foreachArray)) {
+      console.error('ForComponent: ForEach array is not an array');
       return;
     }
-
-    // Cleanup previous rendered scopes
-    this.cleanupRenderedScopes();
 
     this.innerHTML = '';
 
-    arrayValue.forEach((item, index) => {
-      const clone = this.template?.content.cloneNode(true);
-      if (!clone) return;
+    const asAttribute = this.attributeService.get(RESERVED_ATTRIBUTES.AS);
+    const fragment = document.createDocumentFragment();
 
-      // Create r-scope wrapper
-      const scopeElement = document.createElement(
-        config.components.scope
-      ) as ScopeComponent;
-
-      // Mark this scope as generated by for component
-      scopeElement.markAsForGenerated();
-
-      scopeElement.setContext({
-        ...(context.$state as Record<string, unknown>),
-        $index: index,
+    foreachArray.forEach((item, index) => {
+      const stateElement = document.createElement(
+        config.components.state
+      ) as StateComponent;
+      stateElement.markAsNested();
+      stateElement.setSignals({
         $item: item,
-        [this.asValue]: item,
-        $length: arrayValue.length,
+        $index: index,
+        $length: foreachArray.length,
+        $array: foreachArray,
+        ...this.state.$state,
       });
 
-      // Move the cloned content into the scope
-      const fragment = document.createDocumentFragment();
-      while (clone.firstChild) {
-        fragment.appendChild(clone.firstChild);
+      const templateContent = this.template?.content.cloneNode(true);
+      if (templateContent) {
+        stateElement.appendChild(templateContent);
       }
-      scopeElement.appendChild(fragment);
 
-      this.appendChild(scopeElement);
-      this.renderedScopes.push(scopeElement);
+      fragment.appendChild(stateElement);
     });
 
-    // Update previous array value
-    this.previousArrayValue = [...arrayValue];
-  }
-
-  /**
-   * Cleanup all rendered scope components
-   */
-  private cleanupRenderedScopes() {
-    this.renderedScopes.forEach(scope => {
-      if (scope && scope.parentNode) {
-        scope.parentNode.removeChild(scope);
-      }
-    });
-    this.renderedScopes = [];
+    this.appendChild(fragment);
   }
 }
 
-// Register the custom element
 customElements.define(config.components.for, ForComponent);

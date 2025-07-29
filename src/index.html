@@ -3,143 +3,83 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Component If Example</title>
+    <title>Component Example</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="flex flex-col justify-center items-center h-screen">
-    <div class="container h-screen flex flex-col gap-6">
-      <r-scope
-        state='{name: "John", age: 20, isEditing: false, userFruits: [{emoji: "🍎", quantity: 10}, {emoji: "🍌", quantity: 10}], profile: {name: "John", age: 20}}'
-      >
-        <p class="text-2xl font-bold flex items-center gap-2">
-          este es <r-var name="$state.name">___</r-var> y tiene
-          <span
-            class="flex flex-col relative w-10 bg-gray-100 rounded-md items-center justify-center"
-            onwheel="increment($state.age)"
-            onmouseover="$state.isEditing = true"
-            onmouseout="$state.isEditing = false"
-          >
-            <r-if when="$state.isEditing">
-              <template>
-                <button
-                  class="bg-gray-200 w-10 absolute -top-10 left-0 right-0 mx-auto hover:text-white hover:bg-blue-500 active:bg-blue-600 p-1 rounded-md cursor-pointer"
-                  onclick="increment($state.age)"
-                >
-                  +
-                </button>
-              </template>
-            </r-if>
-            <r-var name="$state.age">00</r-var>
-            <r-if when="$state.isEditing">
-              <template>
-                <button
-                  class="bg-gray-200 w-10 absolute -bottom-10 left-0 right-0 mx-auto hover:text-white hover:bg-blue-500 active:bg-blue-600 p-1 rounded-md cursor-pointer"
-                  onclick="decrement($state.age)"
-                >
-                  -
-                </button>
-              </template>
-            </r-if>
-          </span>
-          años
-        </p>
-        <script>
-          const fruits = [
-            '🍎',
-            '🍌',
-            '🍊',
-            '🍇',
-            '🍐',
-            '🍑',
-            '🍓',
-            '🥝',
-            '🥭',
-            '🍍',
-          ];
-
-          function increment(age) {
-            age.value++;
-          }
-
-          function decrement(age) {
-            age.value--;
-          }
-
-          function addFruit(list) {
-            const randomIndex = Math.floor(Math.random() * fruits.length);
-            const randomFruit = fruits[randomIndex];
-            const randomQuantity = Math.floor(Math.random() * 10) + 1;
-            const newFruit = { emoji: randomFruit, quantity: randomQuantity };
-            list.value = [...list.value, newFruit];
-          }
-
-          function removeFruit(array, item) {
-            array.value = array.value.filter(i => i !== item.value);
-          }
-
-          function removeLastFruit(array) {
-            array.value = array.value.slice(0, -1);
-          }
-        </script>
-
-        <r-if when="$state.age > 18">
-          <template>
-            <div class="text-green-500">Es mayor de edad</div>
-          </template>
-
-          <template id="else">
-            <div class="text-red-500">Es menor de edad</div>
-          </template>
-        </r-if>
-
-        <div>
-          <div class="flex gap-2">
-            <r-for each="$state.userFruits" as="item" class="flex gap-2 my-3">
-              <template>
-                <button
-                  class="cursor-pointer border border-gray-300 rounded-md p-1 hover:bg-gray-100"
-                  onclick="removeFruit($state.userFruits, $state.item)"
-                >
-                  <r-var name="$state.item.quantity">0</r-var>
-                  <r-var name="$state.item.emoji">-</r-var>
-                </button>
-              </template>
-            </r-for>
-          </div>
-          <button class="btn" onclick="addFruit($state.userFruits)">add</button>
-          <button class="btn" onclick="removeLastFruit($state.userFruits)">
-            remove
-          </button>
-        </div>
-        <r-var name="$state.profile.name">00</r-var>
-
-        <dialog id="tooMuchFruitDialog">
-          <r-attr name="open" value="$state.userFruits.length > 5"></r-attr>
-          <div
-            class="h-screen w-screen bg-gray-500/30 fixed top-0 bottom-0 left-0 right-0 flex items-center justify-center"
-          >
-            <div class="bg-white p-4 rounded-lg shadow-lg">
-              <h1 class="text-xl font-bold mb-4">¡Advertencia!</h1>
-              <p class="mb-4">
-                <r-var name="$state.userFruits.length"></r-var>
-                son demasiadas frutas!<br />
-                🍎🍌🍊
-              </p>
-              <form method="dialog">
-                <button
-                  class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                >
-                  Cerrar
-                </button>
-              </form>
-              <button class="btn" onclick="removeLastFruit($state.userFruits)">
-                remove
-              </button>
-            </div>
-          </div>
-        </dialog>
-      </r-scope>
-    </div>
     <script type="module" src="lib/main.ts" defer></script>
+    <x-state
+      value="{name: 'John', counter: 16, prop: {a: {test: 'test'}, b: 2}, array: [{label: 'a', value: 1}, {label: 'b', value: 2}, {label: 'c', value: 3}]}"
+    >
+      <div class="container h-screen flex flex-col gap-6">
+        <x-component
+          data-as="button"
+          data-value="{$state.name}"
+          onclick="{toggleName($state.name)}"
+          class="{`text-2xl font-bold cursor-pointer text-center ${$state.name == 'John' ? 'text-red-500' : 'text-blue-500'}`}"
+        >
+          hola
+        </x-component>
+
+        <div class="flex flex-col gap-3 items-center text-xl">
+          <x-var counter></x-var>
+          <x-component
+            data-show="{$state.counter >= 18}"
+            class="text-sm text-center w-full"
+          >
+            <x-var prop.a.test></x-var> es mayor de edad
+          </x-component>
+          <div class="flex gap-2 justify-center">
+            <x-component
+              data-as="button"
+              class="btn"
+              onclick="{decrementCounter($state.counter)}"
+            >
+              -1
+            </x-component>
+            <x-component
+              data-as="button"
+              class="btn"
+              onclick="{incrementCounter($state.counter)}"
+            >
+              +1
+            </x-component>
+          </div>
+        </div>
+        <x-component
+          data-if="{$state.counter > 16}"
+          data-foreach="{$state.array}"
+        >
+          esto solo se renderiza si el counter es mayor a 16
+          <x-var name></x-var>
+        </x-component>
+
+        <x-for data-foreach="{$state.array}">
+          <template>
+            <x-var $item.label></x-var>:
+            <x-var $item.value.value></x-var>
+            <x-component
+              onclick="{console.log($state.$item.value)}"
+              class="btn"
+            >
+              log
+            </x-component>
+          </template>
+        </x-for>
+      </div>
+    </x-state>
+    <script>
+      function toggleName(name) {
+        name.value = name.value === 'John' ? 'Jane' : 'John';
+      }
+
+      function incrementCounter(counter) {
+        counter.value = counter.value + 1;
+      }
+
+      function decrementCounter(counter) {
+        counter.value = counter.value - 1;
+      }
+    </script>
   </body>
 </html>

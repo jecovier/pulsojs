@@ -1,6 +1,4 @@
-import './utils/signals';
-import './components/scope';
-import './components/variable';
-import './components/if';
+import './components/state';
+import './components/component';
+import './components/var';
 import './components/for';
-import './components/attribute';

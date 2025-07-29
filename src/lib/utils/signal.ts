@@ -131,6 +131,10 @@ export class Signal<T> {
     this._subscribers.delete(subscriber);
   }
 
+  unsubscribeAll(): void {
+    this._subscribers.clear();
+  }
+
   private _notify(): void {
     this._subscribers.forEach(subscriber => subscriber());
   }

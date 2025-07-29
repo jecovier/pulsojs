@@ -1,9 +1,8 @@
 export const config = {
   components: {
-    scope: 'r-scope',
-    var: 'r-var',
-    if: 'r-if',
-    for: 'r-for',
-    attr: 'r-attr',
+    component: 'x-component',
+    state: 'x-state',
+    var: 'x-var',
+    for: 'x-for',
   },
 };

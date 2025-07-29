@@ -1,4 +1,4 @@
-import { Signal } from './signals';
+import { Signal } from './signal';
 
 // Cache for function creation to avoid repeated Function constructor calls
 const functionCache = new Map<string, Function>();
@@ -72,7 +72,12 @@ function createSignalProxy(signals: Record<string, Signal<unknown> | unknown>) {
 }
 
 export function parseStringToObject(str: string) {
-  const jsonStr = str.replace(/([{,])\s*(\w+)\s*:/g, '$1"$2":');
+  // First, convert unquoted keys to quoted keys
+  let jsonStr = str.replace(/([{,])\s*(\w+)\s*:/g, '$1"$2":');
+
+  // Then, convert single quotes to double quotes for string values
+  jsonStr = jsonStr.replace(/'([^']*)'/g, '"$1"');
+
   return JSON.parse(jsonStr);
 }
 

@@ -1,14 +1,23 @@
 TODO:
 
+- como hacer bind de los inputs, otro componente? o se
+se podria hacer con x-component
+    - value={$.var} onchange={(event) => $.var = event.value}
+
+- que el state funcione con un custom event de tal forma
+que cuando se cargue el state se dispare
+    - todos los componentes deben escuchar este evento
+    de tal forma que solo se inicialice cuando el state
+    este listo.
+    - esto permite que el state se cargue asincronamente
+    sin que los componentes se rompan
+
+- hook para el state?
+    - const $state = useState('id_state_element')
+    - $state.name = "jhon"
+
 - el html
 
 - el key
 
-- como hacer bind de los inputs
-
-- como hacer attr reactivos?
-    - cualquier expression "{ exp }" se agregue a unos subscribers?
-
-- $effect
-- $computed
-- $ref
+- await?
