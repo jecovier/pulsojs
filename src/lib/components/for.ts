@@ -1,8 +1,5 @@
-import { config } from '../config';
-import {
-  AttributeService,
-  RESERVED_ATTRIBUTES,
-} from '../services/attribute.service';
+import { config, RESERVED_ATTRIBUTES } from '../config';
+import { AttributeService } from '../services/attribute.service';
 import { InterpreterService } from '../services/interpreter.service';
 import { RenderService } from '../services/render.service';
 import { StateService } from '../services/state.service';
@@ -17,10 +14,12 @@ class ForComponent extends HTMLElement {
   private state: State;
   private renderService: RenderService;
   private template: HTMLTemplateElement | null;
+  private unsubscribeFunctions: Map<string, () => void>;
 
   constructor() {
     super();
-    this.attributeService = new AttributeService(this.attributes);
+    this.unsubscribeFunctions = new Map();
+    this.attributeService = new AttributeService(this);
     this.stateService = new StateService(this);
     this.state = this.stateService.getClosestState();
     this.interpreterService = new InterpreterService(this.state);
@@ -50,19 +49,17 @@ class ForComponent extends HTMLElement {
     dependencies.forEach(dependency => {
       const signal = state.$state[dependency] as Signal<unknown>;
       if (signal) {
-        signal.subscribe(this.render.bind(this));
+        const unsubscribe = signal.subscribe(this.render.bind(this));
+        this.unsubscribeFunctions.set(dependency, unsubscribe);
       }
     });
   }
 
   private unsubscribeFromState(state: State) {
-    const dependencies = this.attributeService.getDependencies(state.$state);
-    dependencies.forEach(dependency => {
-      const signal = state.$state[dependency] as Signal<unknown>;
-      if (signal) {
-        signal.unsubscribe(this.render.bind(this));
-      }
+    this.unsubscribeFunctions.forEach((unsubscribe, dependency) => {
+      unsubscribe();
     });
+    this.unsubscribeFunctions.clear();
   }
 
   private render() {
@@ -88,7 +85,7 @@ class ForComponent extends HTMLElement {
 
     this.innerHTML = '';
 
-    const asAttribute = this.attributeService.get(RESERVED_ATTRIBUTES.AS);
+    const asAttribute = this.attributeService.getRaw(RESERVED_ATTRIBUTES.AS);
     const fragment = document.createDocumentFragment();
 
     foreachArray.forEach((item, index) => {

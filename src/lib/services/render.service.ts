@@ -1,4 +1,5 @@
-import { AttributeService, RESERVED_ATTRIBUTES } from './attribute.service';
+import { RESERVED_ATTRIBUTES } from '../config';
+import { AttributeService } from './attribute.service';
 import { InterpreterService } from './interpreter.service';
 
 export class RenderService {
@@ -10,7 +11,7 @@ export class RenderService {
   ) {}
 
   public getTargetElement(element: HTMLElement) {
-    const asElementAttribute = this.attributeService.get(
+    const asElementAttribute = this.attributeService.getRaw(
       RESERVED_ATTRIBUTES.AS
     );
     const requiredTemplate = this.verifyIfRequiresTemplate();
@@ -105,7 +106,6 @@ export class RenderService {
   private showElement(element: HTMLElement) {
     const showAttribute = this.attributeService.get(RESERVED_ATTRIBUTES.SHOW);
     if (!showAttribute) return;
-
     const result = this.interpreterService.evaluateExpression(showAttribute);
     element.style.display = result ? 'block' : 'none';
   }

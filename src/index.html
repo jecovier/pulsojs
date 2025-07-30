@@ -12,60 +12,64 @@
       value="{name: 'John', counter: 16, prop: {a: {test: 'test'}, b: 2}, array: [{label: 'a', value: 1}, {label: 'b', value: 2}, {label: 'c', value: 3}]}"
     >
       <div class="container h-screen flex flex-col gap-6">
-        <x-component
+        <x-reactive
           data-as="button"
           data-value="{$state.name}"
           onclick="{toggleName($state.name)}"
           class="{`text-2xl font-bold cursor-pointer text-center ${$state.name == 'John' ? 'text-red-500' : 'text-blue-500'}`}"
         >
           hola
-        </x-component>
+        </x-reactive>
 
         <div class="flex flex-col gap-3 items-center text-xl">
           <x-var counter></x-var>
-          <x-component
+          <x-reactive
             data-show="{$state.counter >= 12}"
             class="text-sm text-center w-full"
           >
             <x-var prop.a.test></x-var> es mayor de edad
-          </x-component>
+          </x-reactive>
           <div class="flex gap-2 justify-center">
-            <x-component
+            <x-reactive
               data-as="button"
               class="btn"
               onclick="{decrementCounter($state.counter)}"
             >
               -1
-            </x-component>
-            <x-component
+            </x-reactive>
+            <x-reactive
               data-as="button"
               class="btn"
               onclick="{incrementCounter($state.counter)}"
             >
               +1
-            </x-component>
+            </x-reactive>
           </div>
         </div>
-        <x-component
+        <x-reactive
           data-if="{$state.counter > 16}"
           data-foreach="{$state.array}"
         >
           esto solo se renderiza si el counter es mayor a 16
           <x-var name></x-var>
-        </x-component>
+        </x-reactive>
 
         <x-for data-foreach="{$state.array}" data-as="profile">
           <template>
             <x-var profile.label></x-var>:
             <x-var profile.value></x-var>
-            <x-component onclick="{console.log($state.$item)}" class="btn">
+            <x-reactive onclick="{console.log($state.$item)}" class="btn">
               log
-            </x-component>
+            </x-reactive>
           </template>
         </x-for>
+        <x-elm>
+          <button onclick="{$state.name='jose'}" class="btn">click me</button>
+        </x-elm>
 
-        <x-component data-as="input" data-bind="{$state.name}"></x-component>
-        <x-component data-as="textarea" data-bind="{$state.name}"></x-component>
+        hola
+        <x-reactive data-as="input" data-bind="{$state.name}"></x-reactive>
+        <x-reactive data-as="textarea" data-bind="{$state.name}"></x-reactive>
       </div>
     </x-state>
     <script>

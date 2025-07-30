@@ -5,7 +5,7 @@ import { RenderService } from '../services/render.service';
 import { State, StateService } from '../services/state.service';
 import { Signal } from '../utils/signal';
 
-export class reactiveComponent extends HTMLElement {
+export class ReactiveComponent extends HTMLElement {
   private attributeService: AttributeService;
   private eventListeners: Map<string, EventListener>;
   private attributesMap: Map<string, string>;
@@ -20,7 +20,7 @@ export class reactiveComponent extends HTMLElement {
     super();
 
     this.attributesMap = new Map();
-    this.attributeService = new AttributeService(this.attributes);
+    this.attributeService = new AttributeService(this);
     this.stateService = new StateService(this);
     this.eventListeners = new Map();
   }
@@ -117,4 +117,4 @@ export class reactiveComponent extends HTMLElement {
 }
 
 // Register the custom element
-customElements.define(config.components.component, reactiveComponent);
+customElements.define(config.components.reactive, ReactiveComponent);
