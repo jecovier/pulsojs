@@ -33,8 +33,8 @@ export class VarComponent extends HTMLElement {
   }
 
   private subscribeToStateChanges() {
-    const signal = this.state.$state[this.varName] as Signal<unknown>;
-    if (signal) {
+    const signal = this.state.$state[this.varName];
+    if (signal instanceof Signal) {
       this.unsubscribeFunction = signal.subscribe(this.render.bind(this));
     }
   }

@@ -5,73 +5,126 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Component Example</title>
     <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body class="flex flex-col justify-center items-center h-screen">
     <script type="module" src="lib/main.ts" defer></script>
-    <x-state
-      value="{name: 'John', counter: 16, prop: {a: {test: 'test'}, b: 2}, array: [{label: 'a', value: 1}, {label: 'b', value: 2}, {label: 'c', value: 3}]}"
+  </head>
+  <body>
+    <main
+      class="flex flex-col justify-center min-h-screen max-w-xl px-2 mx-auto"
     >
-      <div class="container h-screen flex flex-col gap-6">
-        <x-reactive
-          data-as="button"
-          data-value="{$state.name}"
-          onclick="{toggleName($state.name)}"
-          class="{`text-2xl font-bold cursor-pointer text-center ${$state.name == 'John' ? 'text-red-500' : 'text-blue-500'}`}"
-        >
-          hola
-        </x-reactive>
-
-        <div class="flex flex-col gap-3 items-center text-xl">
-          <x-var counter></x-var>
-          <x-reactive
-            data-show="{$state.counter >= 12}"
-            class="text-sm text-center w-full"
-          >
-            <x-var prop.a.test></x-var> es mayor de edad
-          </x-reactive>
-          <div class="flex gap-2 justify-center">
-            <x-reactive
-              data-as="button"
-              class="btn"
-              onclick="{decrementCounter($state.counter)}"
-            >
-              -1
-            </x-reactive>
-            <x-reactive
-              data-as="button"
-              class="btn"
-              onclick="{incrementCounter($state.counter)}"
-            >
-              +1
-            </x-reactive>
+      <x-state
+        value="{name: 'John', fruits: ['apple', 'banana', 'cherry'], activities: {walking: {likes: 1, dislikes: 0}}}"
+      >
+        <section>
+          <h3>x-var</h3>
+          <div>
+            <p>My name is <x-var name></x-var></p>
           </div>
-        </div>
-        <x-reactive
-          data-if="{$state.counter > 16}"
-          data-foreach="{$state.array}"
-        >
-          esto solo se renderiza si el counter es mayor a 16
-          <x-var name></x-var>
-        </x-reactive>
+        </section>
+        <section>
+          <h3>x-elm</h3>
+          <div>
+            <x-elm>
+              <button class="btn" onclick="{alert($state.name)}">
+                what is my name?
+              </button>
+            </x-elm>
+          </div>
+        </section>
+        <section>
+          <h3>x-for</h3>
+          <div>
+            <p>Using $item state</p>
+            <ul>
+              <x-for each="{$state.fruits}">
+                <template>
+                  <li><x-var $item></x-var></li>
+                </template>
+              </x-for>
+            </ul>
+            <p>Using "as" attribute</p>
+            <ul>
+              <x-for each="{$state.fruits}" as="element">
+                <template>
+                  <li><x-var element></x-var></li>
+                </template>
+              </x-for>
+            </ul>
+          </div>
+        </section>
+        <section>
+          <h3>Accessing object states</h3>
+          <div>
+            <p>
+              First fruit: <x-var fruits[0]></x-var>
+              <br />
+              Walking likes: <x-var activities.walking.likes></x-var>
+            </p>
+          </div>
+        </section>
+      </x-state>
+      <x-state value="{counter: 0}">
+        <h2>Reactivity</h2>
+        <section>
+          <h3>Events</h3>
+          <div>
+            <div class="flex gap-2">
+              <x-elm>
+                <button class="btn w-10" onclick="{$state.counter++}">+</button>
+              </x-elm>
+              <x-elm>
+                <button class="btn w-10" onclick="{$state.counter--}">-</button>
+              </x-elm>
+              <x-elm>
+                <button class="btn" onclick="{$state.counter = 0}">
+                  reset
+                </button>
+              </x-elm>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h3>value</h3>
+          <div>
+            <p class="!text-xl">Counter: <x-var counter></x-var></p>
+          </div>
+        </section>
+        <section>
+          <h3>attributes</h3>
+          <div>
+            <x-elm>
+              <p class="{$state.counter > 0 && '!text-green-700 bg-green-100'}">
+                esto es verde si el contador es positivo
+              </p>
+            </x-elm>
+          </div>
+        </section>
+        <section>
+          <h3>x-show</h3>
+          <div>
+            <x-elm>
+              <p x-show="{$state.counter > 0}">Counter is greater than 0</p>
+            </x-elm>
+            <x-elm>
+              <p x-show="{$state.counter <= 0}">
+                Counter is less than or equal to 0
+              </p>
+            </x-elm>
+          </div>
+        </section>
+        <section>
+          <h3>x-if</h3>
+          <div>
+            <x-elm>
+              <p x-if="{$state.counter == 1}">Counter is 1</p>
+            </x-elm>
+            <x-elm>
+              <p x-if="{$state.counter != 1}">Counter is not 1</p>
+            </x-elm>
+          </div>
+        </section>
+      </x-state>
+    </main>
 
-        <x-for data-foreach="{$state.array}" data-as="profile">
-          <template>
-            <x-var profile.label></x-var>:
-            <x-var profile.value></x-var>
-            <x-reactive onclick="{console.log($state.$item)}" class="btn">
-              log
-            </x-reactive>
-          </template>
-        </x-for>
-        <x-elm>
-          <button onclick="{$state.name='jose'}" class="btn">click me</button>
-        </x-elm>
-
-        hola
-        <x-reactive data-as="input" data-bind="{$state.name}"></x-reactive>
-        <x-reactive data-as="textarea" data-bind="{$state.name}"></x-reactive>
-      </div>
-    </x-state>
     <script>
       function toggleName(name) {
         name.value = name.value === 'John' ? 'Jane' : 'John';

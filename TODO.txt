@@ -11,7 +11,7 @@ que cuando se cargue el state se dispare
     sin que los componentes se rompan
 
 - hook para el state?
-    - const $staxte = useState('id_state_element')
+    - const $state = useState('id_state_element')
     - $state.name = "jhon"
 
 - el html

@@ -9,12 +9,12 @@ export const config = {
 };
 
 export enum RESERVED_ATTRIBUTES {
-  AS = 'data-as',
-  IF = 'data-if',
-  SHOW = 'data-show',
-  FOREACH = 'data-foreach',
-  VALUE = 'data-value',
-  BIND = 'data-bind',
+  IF = 'x-if',
+  SHOW = 'x-show',
+  AS = 'as',
+  FOREACH = 'each',
+  VALUE = 'x-value',
+  BIND = 'x-bind',
 }
 
 export enum API_ATTRIBUTES {
