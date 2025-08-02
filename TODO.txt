@@ -8,6 +8,9 @@ que cuando se cargue el state se dispare
     - esto permite que el state se cargue asincronamente
     sin que los componentes se rompan
 
+- durante el render, que solo se actualicen los attributos cuyas
+  dependencias han cambiado
+
 - hook para el state?
     - const $state = useState('id_state_element')
     - $state.name = "jhon"

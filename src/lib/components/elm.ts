@@ -23,9 +23,10 @@ export class ElementComponent extends BaseComponent {
   }
 
   connectedCallback() {
-    super.connectedCallback();
+    this.subscribeToState();
     this.connectEvents();
     this.connectAttributes();
+    this.render();
   }
 
   disconnectedCallback() {

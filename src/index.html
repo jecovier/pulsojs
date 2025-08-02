@@ -120,6 +120,21 @@
             <x-if value="{$state.counter != 1}">
               <p>Counter is not 1</p>
             </x-if>
+
+            <p>bad attribute</p>
+            <x-if value="{$state.counterr == 1}">
+              <p>this should not be rendered</p>
+            </x-if>
+
+            <p>static attribute</p>
+            <x-if value="$state.counter == 1">
+              <p>this should not be rendered</p>
+            </x-if>
+
+            <p>No attribute</p>
+            <x-if>
+              <p>this should not be rendered</p>
+            </x-if>
           </div>
         </section>
       </x-state>
