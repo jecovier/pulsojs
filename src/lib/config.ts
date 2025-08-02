@@ -1,16 +1,14 @@
 export const config = {
   components: {
-    reactive: 'x-reactive',
     elm: 'x-elm',
     state: 'x-state',
     var: 'x-var',
     for: 'x-for',
+    if: 'x-if',
   },
 };
 
 export enum RESERVED_ATTRIBUTES {
-  IF = 'x-if',
-  SHOW = 'x-show',
   AS = 'as',
   FOREACH = 'each',
   VALUE = 'x-value',

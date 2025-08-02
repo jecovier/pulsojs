@@ -1,68 +1,17 @@
 import { config, RESERVED_ATTRIBUTES } from '../config';
-import { AttributeService } from '../services/attribute.service';
-import { InterpreterService } from '../services/interpreter.service';
-import { RenderService } from '../services/render.service';
-import { StateService } from '../services/state.service';
-import { State } from '../services/state.service';
-import { Signal } from '../utils/signal';
 import { StateComponent } from './state';
+import { BaseComponent } from './baseComponent';
 
-class ForComponent extends HTMLElement {
-  private interpreterService: InterpreterService;
-  private attributeService: AttributeService;
-  private stateService: StateService;
-  private state: State;
-  private renderService: RenderService;
-  private template: HTMLTemplateElement | null;
-  private unsubscribeFunctions: Map<string, () => void>;
-
+class ForComponent extends BaseComponent {
   constructor() {
     super();
-    this.unsubscribeFunctions = new Map();
-    this.attributeService = new AttributeService(this);
-    this.stateService = new StateService(this);
-    this.state = this.stateService.getClosestState();
-    this.interpreterService = new InterpreterService(this.state);
-    this.renderService = new RenderService(
-      this.attributeService,
-      this.interpreterService
+
+    this.template = Array.from(
+      document.createRange().createContextualFragment(this.innerHTML).children
     );
   }
 
-  connectedCallback() {
-    this.template = this.renderService.getTemplate(this);
-    if (!this.template) {
-      console.error('ForComponent: No template found');
-      return;
-    }
-
-    this.subscribeToState(this.state);
-    this.render();
-  }
-
-  disconnectedCallback() {
-    this.unsubscribeFromState(this.state);
-  }
-
-  private subscribeToState(state: State) {
-    const dependencies = this.attributeService.getDependencies(state.$state);
-    dependencies.forEach(dependency => {
-      const signal = state.$state[dependency] as Signal<unknown>;
-      if (signal) {
-        const unsubscribe = signal.subscribe(this.render.bind(this));
-        this.unsubscribeFunctions.set(dependency, unsubscribe);
-      }
-    });
-  }
-
-  private unsubscribeFromState(state: State) {
-    this.unsubscribeFunctions.forEach((unsubscribe, dependency) => {
-      unsubscribe();
-    });
-    this.unsubscribeFunctions.clear();
-  }
-
-  private render() {
+  protected render() {
     const foreachAttribute = this.attributeService.get(
       RESERVED_ATTRIBUTES.FOREACH
     );
@@ -83,7 +32,7 @@ class ForComponent extends HTMLElement {
       return;
     }
 
-    this.innerHTML = '';
+    this.shadowRoot?.replaceChildren();
 
     const asAttribute = this.attributeService.getRaw(RESERVED_ATTRIBUTES.AS);
     const fragment = document.createDocumentFragment();
@@ -102,10 +51,9 @@ class ForComponent extends HTMLElement {
         ...(asAttribute ? { [asAttribute]: item } : {}),
       });
 
-      const templateContent = this.template?.content.cloneNode(true);
-      if (templateContent) {
-        stateElement.appendChild(templateContent);
-      }
+      this.template.forEach(node => {
+        stateElement.appendChild(node.cloneNode(true));
+      });
 
       fragment.appendChild(stateElement);
     });

@@ -8,6 +8,12 @@ export class RenderService {
     private interpreterService: InterpreterService
   ) {}
 
+  public static generateTemplate(shadow: ShadowRoot) {
+    const template = document.createElement('slot');
+    shadow.appendChild(template);
+    return template;
+  }
+
   public render({
     element,
     attributes,
@@ -43,18 +49,16 @@ export class RenderService {
         continue;
       }
 
+      if (key === 'hidden') {
+        element.parentElement!.hidden = !!result;
+      }
+
       if (result === false || result == null) element.removeAttribute(key);
       else element.setAttribute(key, String(result));
     }
   }
 
   private applyReservedDirectives(element: HTMLElement) {
-    const showAttr = this.attributeService.get(RESERVED_ATTRIBUTES.SHOW);
-    if (showAttr) {
-      const show = !!this.interpreterService.evaluateExpression(showAttr);
-      element.parentElement!.hidden = !show;
-    }
-
     const valueAttr = this.attributeService.get(RESERVED_ATTRIBUTES.VALUE);
     if (valueAttr) {
       const v = this.interpreterService.evaluateExpression(valueAttr);

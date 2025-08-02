@@ -36,17 +36,13 @@
             <p>Using $item state</p>
             <ul>
               <x-for each="{$state.fruits}">
-                <template>
-                  <li><x-var $item></x-var></li>
-                </template>
+                <li class="text-green-500"><x-var $item></x-var></li>
               </x-for>
             </ul>
             <p>Using "as" attribute</p>
             <ul>
               <x-for each="{$state.fruits}" as="element">
-                <template>
-                  <li><x-var element></x-var></li>
-                </template>
+                <li class="text-red-500"><x-var element></x-var></li>
               </x-for>
             </ul>
           </div>
@@ -99,13 +95,17 @@
           </div>
         </section>
         <section>
-          <h3>x-show</h3>
+          <h3>Hidden attribute</h3>
           <div>
+            <p>
+              To avoid inconsistencies with flex designs using gap. The hidden
+              attribute will apply a hidden value to the parent element too.
+            </p>
             <x-elm>
-              <p x-show="{$state.counter > 0}">Counter is greater than 0</p>
+              <p hidden="{$state.counter <= 0}">Counter is greater than 0</p>
             </x-elm>
             <x-elm>
-              <p x-show="{$state.counter <= 0}">
+              <p hidden="{$state.counter > 0}">
                 Counter is less than or equal to 0
               </p>
             </x-elm>
@@ -114,12 +114,12 @@
         <section>
           <h3>x-if</h3>
           <div>
-            <x-elm>
-              <p x-if="{$state.counter == 1}">Counter is 1</p>
-            </x-elm>
-            <x-elm>
-              <p x-if="{$state.counter != 1}">Counter is not 1</p>
-            </x-elm>
+            <x-if value="{$state.counter == 1}">
+              <p>Counter is 1</p>
+            </x-if>
+            <x-if value="{$state.counter != 1}">
+              <p>Counter is not 1</p>
+            </x-if>
           </div>
         </section>
       </x-state>

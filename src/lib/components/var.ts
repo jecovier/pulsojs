@@ -47,7 +47,7 @@ export class VarComponent extends HTMLElement {
     const varValue = this.interpreterService.evaluateExpression(
       this.expression
     );
-    this.innerHTML = varValue as string;
+    this.textContent = varValue as string;
   }
 }
 
