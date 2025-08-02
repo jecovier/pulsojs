@@ -4,7 +4,7 @@ import { State, StateService } from '../services/state.service';
 import { Signal } from '../utils/signal';
 
 export class BaseComponent extends HTMLElement {
-  protected template: Element[];
+  protected template: Element[] = [];
   protected attributeService: AttributeService;
   protected interpreterService: InterpreterService;
   protected stateService: StateService;

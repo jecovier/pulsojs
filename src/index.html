@@ -24,7 +24,7 @@
           <h3>x-elm</h3>
           <div>
             <x-elm>
-              <button class="btn" onclick="{alert($state.name)}">
+              <button class="btn" onclick="{alert($state.name.value)}">
                 what is my name?
               </button>
             </x-elm>
@@ -34,13 +34,13 @@
           <h3>x-for</h3>
           <div>
             <p>Using $item state</p>
-            <ul>
+            <ul id="for-items-test">
               <x-for each="{$state.fruits}">
                 <li class="text-green-500"><x-var $item></x-var></li>
               </x-for>
             </ul>
             <p>Using "as" attribute</p>
-            <ul>
+            <ul id="for-as-test">
               <x-for each="{$state.fruits}" as="element">
                 <li class="text-red-500"><x-var element></x-var></li>
               </x-for>
@@ -65,13 +65,29 @@
           <div>
             <div class="flex gap-2">
               <x-elm>
-                <button class="btn w-10" onclick="{$state.counter++}">+</button>
+                <button
+                  id="btn-plus"
+                  class="btn w-10"
+                  onclick="{$state.counter++}"
+                >
+                  +
+                </button>
               </x-elm>
               <x-elm>
-                <button class="btn w-10" onclick="{$state.counter--}">-</button>
+                <button
+                  id="btn-minus"
+                  class="btn w-10"
+                  onclick="{$state.counter--}"
+                >
+                  -
+                </button>
               </x-elm>
               <x-elm>
-                <button class="btn" onclick="{$state.counter = 0}">
+                <button
+                  id="btn-reset"
+                  class="btn"
+                  onclick="{$state.counter = 0}"
+                >
                   reset
                 </button>
               </x-elm>
@@ -123,17 +139,23 @@
 
             <p>bad attribute</p>
             <x-if value="{$state.counterr == 1}">
-              <p>this should not be rendered</p>
+              <p>
+                this should not be rendered because counterr is not a valid
+                state
+              </p>
             </x-if>
 
             <p>static attribute</p>
             <x-if value="$state.counter == 1">
-              <p>this should not be rendered</p>
+              <p>
+                this should not be rendered because $state.counter is not a
+                valid state
+              </p>
             </x-if>
 
             <p>No attribute</p>
             <x-if>
-              <p>this should not be rendered</p>
+              <p>this should not be rendered because there is no attribute</p>
             </x-if>
           </div>
         </section>

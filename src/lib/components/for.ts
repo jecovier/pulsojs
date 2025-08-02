@@ -9,6 +9,7 @@ class ForComponent extends BaseComponent {
     this.template = Array.from(
       document.createRange().createContextualFragment(this.innerHTML).children
     );
+    this.innerHTML = '';
   }
 
   protected render() {
