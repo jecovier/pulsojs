@@ -30,14 +30,32 @@ export class StateService {
   }
 
   public getClosestState(): State {
-    const signals = this.getParentState().getSignals();
-    const context = this.getParentState().getContext();
+    const parentState = this.getParentState();
+
+    // Check if state is ready
+    if (!parentState.isStateReady()) {
+      throw new Error(
+        `${this.constructor.name}: state is not ready yet. Wait for 'state-ready' event.`
+      );
+    }
+
+    const signals = parentState.getSignals();
+    const context = parentState.getContext();
     return {
       $state: this.createSignalProxy({
         ...signals,
         ...context,
       }),
     };
+  }
+
+  public isStateReady(): boolean {
+    try {
+      const parentState = this.getParentState();
+      return parentState.isStateReady();
+    } catch {
+      return false;
+    }
   }
 
   private createSignalProxy(

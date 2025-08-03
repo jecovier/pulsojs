@@ -6,6 +6,10 @@ export const config = {
     for: 'x-for',
     if: 'x-if',
   },
+  state: {
+    readyEvent: 'state-ready',
+    nested: 'data-state-nested',
+  },
 };
 
 export enum RESERVED_ATTRIBUTES {

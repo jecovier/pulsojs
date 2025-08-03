@@ -1,4 +1,5 @@
 import { Signal } from './signal';
+export { waitForStateReady, hasReadyState } from './stateReady';
 
 // Cache for function creation to avoid repeated Function constructor calls
 const functionCache = new Map<string, Function>();
@@ -84,4 +85,8 @@ export function parseStringToObject(str: string) {
 // Cleanup function to clear cache when needed
 export function clearFunctionCache() {
   functionCache.clear();
+}
+
+export function isEmptyObject(obj: Record<string, unknown>) {
+  return Object.keys(obj).length === 0 || obj === null;
 }

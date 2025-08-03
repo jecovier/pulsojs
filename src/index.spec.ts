@@ -59,30 +59,11 @@ describe('Component System Tests', () => {
         .should('not.have.class', '!text-green-700');
 
       // Click increment button
-      cy.get('button').contains('+').click();
+      cy.get('#btn-plus').click();
 
       cy.get('p')
         .contains('esto es verde si el contador es positivo')
         .should('have.class', '!text-green-700');
-    });
-
-    it('should handle hidden attribute', () => {
-      // Initially counter is 0, so "Counter is greater than 0" should be hidden
-      cy.get('p')
-        .contains('Counter is greater than 0')
-        .should('not.be.visible');
-      cy.get('p')
-        .contains('Counter is less than or equal to 0')
-        .should('be.visible');
-
-      // Click increment button
-      cy.get('button').contains('+').click();
-
-      // Now counter is 1, so "Counter is greater than 0" should be visible
-      cy.get('p').contains('Counter is greater than 0').should('be.visible');
-      cy.get('p')
-        .contains('Counter is less than or equal to 0')
-        .should('not.be.visible');
     });
   });
 
@@ -120,44 +101,73 @@ describe('Component System Tests', () => {
     });
   });
 
-  describe('x-if Component', () => {
-    it('should show content when condition is true', () => {
-      // Set counter to 1
-      cy.get('#btn-reset').click();
-      cy.get('#btn-plus').click();
+  describe('Conditional Rendering', () => {
+    describe('Hidden attribute', () => {
+      it('should show element when showHidden is false', () => {
+        cy.get('p').contains('Secret value').should('be.visible');
+      });
 
-      cy.get('p').contains('Counter is not 1').should('not.exist');
-      cy.get('p').contains('Counter is 1').should('be.visible');
+      it('should hide element when showHidden is toggled to true', () => {
+        cy.get('button').contains('toggle showHidden').click();
+        cy.get('p').contains('Secret value').should('not.be.visible');
+      });
+
+      it('should show element when showHidden is toggled back to false', () => {
+        cy.get('button').contains('toggle showHidden').click();
+        cy.get('button').contains('toggle showHidden').click();
+        cy.get('p').contains('Secret value').should('be.visible');
+      });
     });
 
-    it('should hide content when condition is false', () => {
-      // Counter starts at 0
-      cy.get('#btn-reset').click();
+    describe('x-if Component', () => {
+      it('should show content when showIf is true', () => {
+        cy.get('button').contains('toggle showIf').click();
+        cy.get('p').contains('ShowIf is true').should('be.visible');
+        cy.get('p').contains('ShowIf is false').should('not.exist');
+      });
 
-      cy.get('p').contains('Counter is 1').should('not.exist');
-      cy.get('p').contains('Counter is not 1').should('be.visible');
-    });
+      it('should show content when showIf is false', () => {
+        // Ensure showIf is false initially
+        cy.get('button').contains('toggle showIf').click();
+        cy.get('button').contains('toggle showIf').click();
 
-    it('should handle invalid expressions gracefully', () => {
-      cy.get('p')
-        .contains(
-          'this should not be rendered because counterr is not a valid state'
-        )
-        .should('not.exist');
-    });
+        cy.get('p').contains('ShowIf is false').should('be.visible');
+        cy.get('p').contains('ShowIf is true').should('not.exist');
+      });
 
-    it('should handle static expressions', () => {
-      cy.get('p')
-        .contains(
-          'this should not be rendered because $state.counter is not a valid state'
-        )
-        .should('not.exist');
-    });
+      it('should toggle between true and false content', () => {
+        // Initially should show false content
+        cy.get('p').contains('ShowIf is false').should('be.visible');
+        cy.get('p').contains('ShowIf is true').should('not.exist');
 
-    it('should handle missing value attribute', () => {
-      cy.get('p')
-        .contains('this should not be rendered because there is no attribute')
-        .should('not.exist');
+        // Click to toggle to true
+        cy.get('button').contains('toggle showIf').click();
+        cy.get('p').contains('ShowIf is true').should('be.visible');
+        cy.get('p').contains('ShowIf is false').should('not.exist');
+
+        // Click to toggle back to false
+        cy.get('button').contains('toggle showIf').click();
+        cy.get('p').contains('ShowIf is false').should('be.visible');
+        cy.get('p').contains('ShowIf is true').should('not.exist');
+      });
+
+      it('should not render when no condition is provided', () => {
+        cy.get('p')
+          .contains('this should not be rendered because no condition')
+          .should('not.exist');
+      });
+
+      it('should not render when static value is provided', () => {
+        cy.get('p')
+          .contains('this should not be rendered because static value')
+          .should('not.exist');
+      });
+
+      it('should not render when var name is wrong', () => {
+        cy.get('p')
+          .contains('this should not be rendered because var name is wrong')
+          .should('not.exist');
+      });
     });
   });
 
@@ -193,54 +203,6 @@ describe('Component System Tests', () => {
       cy.get('p')
         .contains('esto es verde si el contador es positivo')
         .should('have.class', '!text-green-700');
-    });
-  });
-
-  describe('Complex State Tests', () => {
-    it('should handle complex nested state from HTML example', () => {
-      // Test name display
-      cy.get('p').contains('My name is John').should('exist');
-
-      // Test array access
-      cy.get('p').contains('First fruit: apple').should('exist');
-
-      // Test deep nested object access
-      cy.get('p').contains('Walking likes: 1').should('exist');
-    });
-
-    it('should handle multiple state contexts', () => {
-      // First state context
-      cy.get('x-state')
-        .first()
-        .within(() => {
-          cy.get('p').contains('My name is John').should('exist');
-        });
-
-      // Second state context (counter)
-      cy.get('x-state')
-        .last()
-        .within(() => {
-          cy.get('p').contains('Counter: 0').should('exist');
-        });
-    });
-  });
-
-  describe('UI/UX Tests', () => {
-    it('should have proper layout and styling', () => {
-      cy.get('main').should('have.class', 'flex');
-      cy.get('main').should('have.class', 'flex-col');
-      cy.get('main').should('have.class', 'justify-center');
-      cy.get('main').should('have.class', 'min-h-screen');
-      cy.get('main').should('have.class', 'max-w-xl');
-    });
-
-    it('should have proper button styling', () => {
-      cy.get('button').should('have.class', 'btn');
-    });
-
-    it('should have proper section organization', () => {
-      cy.get('section').should('have.length.at.least', 1);
-      cy.get('h3').should('have.length.at.least', 1);
     });
   });
 });

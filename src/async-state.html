@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Component Example</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="lib/main.ts" defer></script>
+  </head>
+  <body>
+    <main
+      class="flex flex-col justify-center min-h-screen max-w-xl px-2 mx-auto"
+    >
+      <h2>States</h2>
+      <x-state value="{name: 'John'}">
+        <section>
+          <h3>Normal</h3>
+          <div>
+            <p>My name is <x-var name></x-var></p>
+            <x-if value="{$state.name == 'John'}">
+              <p><x-var name></x-var> is here</p>
+            </x-if>
+          </div>
+        </section>
+      </x-state>
+      <x-state>
+        <section>
+          <h3>No state</h3>
+          <div>
+            <p>My name is <x-var name></x-var></p>
+          </div>
+        </section>
+      </x-state>
+      <x-state id="async-state-value">
+        <section>
+          <h3>Async Value State</h3>
+          <div>
+            <p>My name is <x-var name></x-var></p>
+          </div>
+        </section>
+      </x-state>
+      <script>
+        const asyncStateValue = document.getElementById('async-state-value');
+        setTimeout(() => {
+          asyncStateValue.value = { name: 'Jane' };
+        }, 1000);
+      </script>
+      <x-state id="async-state-signals">
+        <section>
+          <h3>Async State Signals</h3>
+          <div>
+            <p>My name is <x-var name></x-var></p>
+          </div>
+        </section>
+      </x-state>
+      <script>
+        const asyncStateSignals = document.getElementById(
+          'async-state-signals'
+        );
+        setTimeout(() => {
+          asyncStateSignals.setSignals({ name: 'Jane' });
+        }, 1000);
+      </script>
+      <x-state id="async-state-set-state">
+        <section>
+          <h3>Async State</h3>
+          <div>
+            <p>My name is <x-var name>xxx</x-var></p>
+            <x-if value="{$state.name == 'Jane'}">
+              <p><x-var name></x-var> is here</p>
+            </x-if>
+          </div>
+        </section>
+      </x-state>
+      <script>
+        const asyncStateSetState = document.getElementById(
+          'async-state-set-state'
+        );
+        setTimeout(() => {
+          asyncStateSetState.setState({ name: 'Jane' });
+        }, 2000);
+      </script>
+    </main>
+  </body>
+</html>

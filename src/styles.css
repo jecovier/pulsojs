@@ -1,26 +1,30 @@
 @import 'tailwindcss';
 
 body {
-  @apply p-0 m-0;
+  @apply p-0 m-0 font-sans;
 }
 
 .btn {
-  @apply bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-400 active:bg-blue-600 cursor-pointer;
+  @apply bg-gray-500 text-white px-3 py-1 rounded-xs hover:bg-gray-400 active:bg-gray-600 cursor-pointer;
 }
 
 .container {
   @apply w-full h-full flex flex-col items-center justify-center mx-auto;
 }
 
+h2 {
+  @apply text-2xl text-black mb-3 mt-6;
+}
+
 section {
-  @apply flex flex-col gap-2 mb-6 border rounded-md;
+  @apply flex flex-col gap-2 mb-6 border border-gray-300 rounded-xs;
 
   p {
-    @apply text-sm text-gray-700;
+    @apply text-gray-600 leading-tight mb-3;
   }
 
   > h3 {
-    @apply text-xl border-b p-2;
+    @apply text-lg text-gray-800 border-b border-gray-300 py-1 px-3;
   }
 
   > div {

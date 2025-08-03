@@ -14,6 +14,7 @@
       <x-state
         value="{name: 'John', fruits: ['apple', 'banana', 'cherry'], activities: {walking: {likes: 1, dislikes: 0}}}"
       >
+        <h2>Basics</h2>
         <section>
           <h3>x-var</h3>
           <div>
@@ -97,7 +98,9 @@
         <section>
           <h3>value</h3>
           <div>
-            <p class="!text-xl">Counter: <x-var counter></x-var></p>
+            <p id="counterResult" class="!text-xl">
+              Counter: <x-var counter></x-var>
+            </p>
           </div>
         </section>
         <section>
@@ -110,6 +113,9 @@
             </x-elm>
           </div>
         </section>
+      </x-state>
+      <x-state value="{showHidden: false, showIf: false}">
+        <h2>Conditional rendering</h2>
         <section>
           <h3>Hidden attribute</h3>
           <div>
@@ -118,44 +124,49 @@
               attribute will apply a hidden value to the parent element too.
             </p>
             <x-elm>
-              <p hidden="{$state.counter <= 0}">Counter is greater than 0</p>
+              <button
+                class="btn"
+                onclick="{$state.showHidden = !$state.showHidden.value}"
+              >
+                toggle showHidden
+              </button>
             </x-elm>
+
             <x-elm>
-              <p hidden="{$state.counter > 0}">
-                Counter is less than or equal to 0
-              </p>
+              <p hidden="{$state.showHidden}">Secret value</p>
             </x-elm>
           </div>
         </section>
         <section>
           <h3>x-if</h3>
           <div>
-            <x-if value="{$state.counter == 1}">
-              <p>Counter is 1</p>
+            <x-elm>
+              <button
+                class="btn"
+                onclick="{$state.showIf = !$state.showIf.value}"
+              >
+                toggle showIf
+              </button>
+            </x-elm>
+            <x-if value="{$state.showIf}">
+              <p>ShowIf is true</p>
             </x-if>
-            <x-if value="{$state.counter != 1}">
-              <p>Counter is not 1</p>
+            <x-if value="{!$state.showIf.value}">
+              <p>ShowIf is false</p>
             </x-if>
-
-            <p>bad attribute</p>
-            <x-if value="{$state.counterr == 1}">
-              <p>
-                this should not be rendered because counterr is not a valid
-                state
-              </p>
+          </div>
+        </section>
+        <section>
+          <h3>Bad attributes</h3>
+          <div>
+            <x-if value="{$state.showIff}">
+              <p>this should not be rendered because var name is wrong</p>
             </x-if>
-
-            <p>static attribute</p>
-            <x-if value="$state.counter == 1">
-              <p>
-                this should not be rendered because $state.counter is not a
-                valid state
-              </p>
+            <x-if value="$state.showIf">
+              <p>this should not be rendered because static value</p>
             </x-if>
-
-            <p>No attribute</p>
             <x-if>
-              <p>this should not be rendered because there is no attribute</p>
+              <p>this should not be rendered because no condition</p>
             </x-if>
           </div>
         </section>

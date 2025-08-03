@@ -5,18 +5,8 @@ class IfComponent extends BaseComponent {
   constructor() {
     super();
 
-    this.template = Array.from(
-      document.createRange().createContextualFragment(this.innerHTML).children
-    );
+    this.template = Array.from(this.children);
     this.innerHTML = '';
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
   }
 
   protected render() {

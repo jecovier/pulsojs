@@ -1,22 +1,34 @@
 import { config } from '../config';
 import { Signal } from '../utils/signal';
-import { parseStringToObject } from '../utils';
+import { isEmptyObject, parseStringToObject } from '../utils';
 
 type Signals = Record<string, Signal<unknown>>;
+
+// Custom event for state readiness
+export class StateReadyEvent extends CustomEvent<{ state: StateComponent }> {
+  constructor(state: StateComponent) {
+    super(config.state.readyEvent, {
+      detail: { state },
+      bubbles: true,
+      composed: true,
+    });
+  }
+}
 
 export class StateComponent extends HTMLElement {
   private signals: Signals = {};
   private context: Record<string, unknown> = {};
   private isDisconnected = false;
   private isNested = false;
+  private isReady = false;
 
   connectedCallback() {
     this.isDisconnected = false;
-    this.isNested = this.hasAttribute('data-state-nested');
+    this.isNested = this.hasAttribute(config.state.nested);
 
     const state = this.getAttribute('value') || '{}';
     const parsedState = this.parseState(state);
-    this.setSignals(parsedState);
+    this.setState(parsedState);
   }
 
   disconnectedCallback() {
@@ -43,6 +55,20 @@ export class StateComponent extends HTMLElement {
 
   public getSignals(): Signals {
     return this.signals;
+  }
+
+  public isStateReady(): boolean {
+    return this.isReady;
+  }
+
+  public setState(state: Record<string, unknown>) {
+    if (isEmptyObject(state)) {
+      return;
+    }
+
+    this.setSignals(state);
+    this.isReady = true;
+    this.dispatchEvent(new StateReadyEvent(this));
   }
 
   public setSignals(context: Record<string, unknown>) {
