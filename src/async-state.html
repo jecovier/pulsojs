@@ -42,7 +42,7 @@
       <script>
         const asyncStateValue = document.getElementById('async-state-value');
         setTimeout(() => {
-          asyncStateValue.value = { name: 'Jane' };
+          asyncStateValue.setAttribute('value', '{name: "Jose"}');
         }, 1000);
       </script>
       <x-state id="async-state-signals">

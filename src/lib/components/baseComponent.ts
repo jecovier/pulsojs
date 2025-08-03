@@ -2,61 +2,46 @@ import { config } from '../config';
 import { AttributeService } from '../services/attribute.service';
 import { InterpreterService } from '../services/interpreter.service';
 import { State, StateService } from '../services/state.service';
-import { isEmptyObject } from '../utils';
 import { Signal } from '../utils/signal';
+import { StateComponent } from './state';
 
 export class BaseComponent extends HTMLElement {
   protected template: Element[] = [];
   protected attributeService: AttributeService;
-  protected interpreterService!: InterpreterService;
-  protected stateService!: StateService;
+  protected stateService: StateService;
   protected state!: State;
-  protected previousValue: boolean | null = null;
+  protected interpreterService!: InterpreterService;
   protected unsubscribeFunctions: Map<string, () => void> = new Map();
-  private isInitialized = false;
 
   constructor() {
     super();
-
-    this.stateService = new StateService(this);
     this.attributeService = new AttributeService(this);
+    this.stateService = new StateService(this);
   }
 
   connectedCallback() {
-    try {
-      const state = this.stateService.getClosestState();
-      if (!isEmptyObject(state.$state)) {
-        this.initializeComponent();
-        return;
-      }
-    } catch (error) {
-      const stateElement = this.closest(config.components.state);
-      stateElement?.addEventListener(
-        config.state.readyEvent,
-        this.handleStateReady.bind(this) as EventListener
-      );
+    const state = this.closest(config.components.state) as StateComponent;
+    if (state.isStateReady()) {
+      this.initialize();
+      return;
     }
+
+    state.addEventListener(config.state.readyEvent, () => this.initialize());
   }
 
   disconnectedCallback() {
-    this.unsubscribeFromState();
+    this.unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+    this.unsubscribeFunctions.clear();
   }
 
-  private handleStateReady() {
-    if (!this.isInitialized) {
-      this.initializeComponent();
+  protected initialize() {
+    if (!document.contains(this)) {
+      return;
     }
-  }
 
-  private initializeComponent() {
-    this.isInitialized = true;
     this.state = this.stateService.getClosestState();
     this.interpreterService = new InterpreterService(this.state);
     this.subscribeToState();
-    this.start();
-  }
-
-  protected start() {
     this.render();
   }
 
@@ -77,10 +62,5 @@ export class BaseComponent extends HTMLElement {
         );
       }
     });
-  }
-
-  protected unsubscribeFromState() {
-    this.unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
-    this.unsubscribeFunctions.clear();
   }
 }

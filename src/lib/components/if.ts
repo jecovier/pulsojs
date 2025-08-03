@@ -2,11 +2,15 @@ import { config } from '../config';
 import { BaseComponent } from './baseComponent';
 
 class IfComponent extends BaseComponent {
+  private previousValue: boolean;
+  private html: string;
+
   constructor() {
     super();
 
-    this.template = Array.from(this.children);
+    this.html = this.innerHTML;
     this.innerHTML = '';
+    this.previousValue = !!this.getAttribute('hidden');
   }
 
   protected render() {
@@ -18,9 +22,7 @@ class IfComponent extends BaseComponent {
     }
 
     if (result) {
-      this.template.forEach(node => {
-        this.appendChild(node.cloneNode(true));
-      });
+      this.innerHTML = this.html;
     } else {
       this.innerHTML = '';
     }

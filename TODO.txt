@@ -1,13 +1,5 @@
 TODO:
 =====================================================
-✅ COMPLETED: que el state funcione con un custom event de tal forma
-que cuando se cargue el state se dispare
-    - todos los componentes deben escuchar este evento
-    de tal forma que solo se inicialice cuando el state
-    este listo.
-    - esto permite que el state se cargue asincronamente
-    sin que los componentes se rompan
-
 - durante el render, que solo se actualicen los attributos cuyas
   dependencias han cambiado
 

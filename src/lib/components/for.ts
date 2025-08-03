@@ -3,16 +3,20 @@ import { StateComponent } from './state';
 import { BaseComponent } from './baseComponent';
 
 class ForComponent extends BaseComponent {
+  private html: string = '';
+
   constructor() {
     super();
 
     this.template = Array.from(
       document.createRange().createContextualFragment(this.innerHTML).children
     );
+    this.html = this.innerHTML;
     this.innerHTML = '';
   }
 
   protected render() {
+    console.log('ForComponent: render');
     const foreachAttribute = this.attributeService.get(
       RESERVED_ATTRIBUTES.FOREACH
     );
@@ -33,7 +37,7 @@ class ForComponent extends BaseComponent {
       return;
     }
 
-    this.shadowRoot?.replaceChildren();
+    this.innerHTML = '';
 
     const asAttribute = this.attributeService.getRaw(RESERVED_ATTRIBUTES.AS);
     const fragment = document.createDocumentFragment();
@@ -42,23 +46,24 @@ class ForComponent extends BaseComponent {
       const stateElement = document.createElement(
         config.components.state
       ) as StateComponent;
-      stateElement.markAsNested();
-      stateElement.setSignals(this.state.$state);
-      stateElement.setContext({
+      const context = {
         $item: item,
         $index: index,
         $length: foreachArray.length,
         $array: foreachArray,
         ...(asAttribute ? { [asAttribute]: item } : {}),
-      });
+      };
 
-      this.template.forEach(node => {
-        stateElement.appendChild(node.cloneNode(true));
-      });
+      stateElement.markAsNested();
+      stateElement.setContext(context);
+      stateElement.setSignals(this.state.$state);
+      stateElement.setAsReady();
+      stateElement.innerHTML = this.html;
 
       fragment.appendChild(stateElement);
     });
 
+    console.log('ForComponent: render', fragment);
     this.appendChild(fragment);
   }
 }

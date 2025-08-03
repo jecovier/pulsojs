@@ -18,14 +18,14 @@ export class StateService {
       return this.stateParentCache;
     }
 
-    const scopeParent = this.element.closest(config.components.state);
-    if (!scopeParent) {
+    const stateParent = this.element.closest(config.components.state);
+    if (!stateParent) {
       throw new Error(
         `${this.constructor.name}: must be inside a state component (${config.components.state})`
       );
     }
 
-    this.stateParentCache = scopeParent as StateComponent;
+    this.stateParentCache = stateParent as StateComponent;
     return this.stateParentCache;
   }
 

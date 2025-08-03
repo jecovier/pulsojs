@@ -1,5 +1,6 @@
 import { config } from '../config';
 import { AttributeService } from '../services/attribute.service';
+import { InterpreterService } from '../services/interpreter.service';
 import { RenderService } from '../services/render.service';
 import { BaseComponent } from './baseComponent';
 
@@ -7,22 +8,24 @@ export class ElementComponent extends BaseComponent {
   private eventListeners: Map<string, EventListener>;
   private attributesMap: Map<string, string>;
   private targetElement: HTMLElement;
-  private renderService: RenderService;
+  private renderService!: RenderService;
 
   constructor() {
     super();
-
     this.attributesMap = new Map();
     this.eventListeners = new Map();
     this.targetElement = this.getFirstChild();
     this.attributeService = new AttributeService(this.targetElement);
+  }
+
+  protected initialize() {
+    this.state = this.stateService.getClosestState();
+    this.interpreterService = new InterpreterService(this.state);
     this.renderService = new RenderService(
       this.attributeService,
       this.interpreterService
     );
-  }
-
-  protected start() {
+    this.subscribeToState();
     this.connectEvents();
     this.connectAttributes();
     this.render();
