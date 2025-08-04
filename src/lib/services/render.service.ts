@@ -8,12 +8,6 @@ export class RenderService {
     private interpreterService: InterpreterService
   ) {}
 
-  public static generateTemplate(shadow: ShadowRoot) {
-    const template = document.createElement('slot');
-    shadow.appendChild(template);
-    return template;
-  }
-
   public render({
     element,
     attributes,

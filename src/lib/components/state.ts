@@ -101,7 +101,7 @@ export class StateComponent extends HTMLElement {
         signal.unsubscribeAll();
       }
     });
-    this.signals = {};
+    this.signals = Object.create(null) as Signals;
   }
 
   public markAsNested() {

@@ -5,29 +5,29 @@ import { RenderService } from '../services/render.service';
 import { BaseComponent } from './baseComponent';
 
 export class ElementComponent extends BaseComponent {
-  private eventListeners: Map<string, EventListener>;
-  private attributesMap: Map<string, string>;
-  private targetElement: HTMLElement;
+  private eventListeners = new Map<string, EventListener>();
+  private attributesMap = new Map<string, string>();
+  private targetElement!: HTMLElement;
   private renderService!: RenderService;
 
   constructor() {
     super();
-    this.attributesMap = new Map();
-    this.eventListeners = new Map();
-    this.targetElement = this.getFirstChild();
-    this.attributeService = new AttributeService(this.targetElement);
   }
 
   protected initialize() {
     this.state = this.stateService.getClosestState();
     this.interpreterService = new InterpreterService(this.state);
+
+    this.targetElement = this.getFirstChild();
+    this.attributeService = new AttributeService(this.targetElement);
     this.renderService = new RenderService(
       this.attributeService,
       this.interpreterService
     );
+
     this.subscribeToState();
-    this.connectEvents();
     this.connectAttributes();
+    this.connectEvents();
     this.render();
   }
 
@@ -38,10 +38,10 @@ export class ElementComponent extends BaseComponent {
   }
 
   private connectAttributes() {
-    this.attributeService.getReactiveAttributes().forEach((value, key) => {
+    for (const [key, value] of this.attributeService.getReactiveAttributes()) {
       this.attributesMap.set(key, value);
       this.attributeService.remove(key);
-    });
+    }
   }
 
   private disconnectAttributes() {
@@ -49,36 +49,26 @@ export class ElementComponent extends BaseComponent {
   }
 
   private connectEvents() {
-    const eventAttributes = this.attributeService.getEventAttributes();
+    for (const [key, value] of this.attributeService.getEventAttributes()) {
+      if (!key.startsWith('on')) continue;
+      const eventName = key.slice(2).toLowerCase();
 
-    eventAttributes.forEach((value, key) => {
-      const eventName = key.replace('on', '');
-
-      this.eventListeners.set(eventName, (e: Event) => {
-        this.handleEvent(e, value);
-      });
-
-      this.targetElement.addEventListener(
-        eventName,
-        this.eventListeners.get(eventName)!
-      );
-
+      const handler: EventListener = (e: Event) => this.handleEvent(e, value);
+      this.eventListeners.set(eventName, handler);
+      this.targetElement.addEventListener(eventName, handler);
       this.attributeService.remove(key);
-    });
+    }
   }
 
   private disconnectEvents() {
-    const eventAttributes = this.attributeService.getEventAttributes();
-    eventAttributes.forEach((_value, key) => {
-      this.removeEventListener(key, this.eventListeners.get(key)!);
-      this.eventListeners.delete(key);
-    });
+    for (const [eventName, handler] of this.eventListeners) {
+      this.targetElement.removeEventListener(eventName, handler);
+    }
+    this.eventListeners.clear();
   }
 
   private handleEvent(event: Event, expression: string) {
-    this.interpreterService.executeCode(expression, {
-      $event: event,
-    });
+    this.interpreterService.executeCode(expression, { $event: event });
   }
 
   protected render() {
@@ -88,18 +78,18 @@ export class ElementComponent extends BaseComponent {
     });
   }
 
-  private getFirstChild() {
-    if (this.children.length === 0) {
+  private getFirstChild(): HTMLElement {
+    if (this.childElementCount === 0) {
       throw new Error('No child element found');
     }
-
-    if (this.children.length > 1) {
+    if (this.childElementCount > 1) {
       throw new Error('Only one child element is allowed');
     }
 
-    const child = this.children[0] as HTMLElement;
+    const child = this.firstElementChild as HTMLElement;
+    if (!child) throw new Error('No child element found');
 
-    if (child.tagName.toLowerCase() === 'template') {
+    if (child.tagName === 'TEMPLATE') {
       throw new Error('Template is not allowed as a child element');
     }
 
@@ -107,5 +97,4 @@ export class ElementComponent extends BaseComponent {
   }
 }
 
-// Register the custom element
 customElements.define(config.components.elm, ElementComponent);

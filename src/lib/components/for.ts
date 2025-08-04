@@ -8,15 +8,11 @@ class ForComponent extends BaseComponent {
   constructor() {
     super();
 
-    this.template = Array.from(
-      document.createRange().createContextualFragment(this.innerHTML).children
-    );
     this.html = this.innerHTML;
     this.innerHTML = '';
   }
 
   protected render() {
-    console.log('ForComponent: render');
     const foreachAttribute = this.attributeService.get(
       RESERVED_ATTRIBUTES.FOREACH
     );
@@ -63,7 +59,6 @@ class ForComponent extends BaseComponent {
       fragment.appendChild(stateElement);
     });
 
-    console.log('ForComponent: render', fragment);
     this.appendChild(fragment);
   }
 }

@@ -6,7 +6,6 @@ import { Signal } from '../utils/signal';
 import { StateComponent } from './state';
 
 export class BaseComponent extends HTMLElement {
-  protected template: Element[] = [];
   protected attributeService: AttributeService;
   protected stateService: StateService;
   protected state!: State;
