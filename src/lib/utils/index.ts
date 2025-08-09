@@ -11,3 +11,11 @@ export function parseStringToObject(str: string) {
 export function isEmptyObject(obj: Record<string, unknown>) {
   return Object.keys(obj).length === 0 || obj === null;
 }
+
+export const waitForDOMContentToBeLoaded = new Promise(resolve => {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', resolve);
+  } else {
+    resolve(undefined);
+  }
+});

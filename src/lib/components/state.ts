@@ -16,7 +16,6 @@ export class StateReadyEvent extends CustomEvent<{ state: StateComponent }> {
 }
 
 export class StateComponent extends HTMLElement {
-  private signals: Signals = {};
   private context: Record<string, unknown> = {};
   private isDisconnected = false;
   private isNested = false;
@@ -36,7 +35,7 @@ export class StateComponent extends HTMLElement {
     this.isDisconnected = false;
     this.isNested = this.hasAttribute(config.state.nested);
 
-    if (this.isReady) {
+    if (this.isStateReady()) {
       this.dispatchEvent(new StateReadyEvent(this));
       return;
     }
@@ -45,7 +44,7 @@ export class StateComponent extends HTMLElement {
   private parseState(state: string) {
     try {
       const parsedState = parseStringToObject(state);
-      this.setState(parsedState);
+      this.setState(this.objectToSignals(parsedState));
     } catch (error) {
       console.error('Invalid State value', error);
     }
@@ -53,7 +52,7 @@ export class StateComponent extends HTMLElement {
 
   disconnectedCallback() {
     this.isDisconnected = true;
-    this.cleanupSignals();
+    this.cleanupContext();
   }
 
   public setContext(context: Record<string, unknown>) {
@@ -64,44 +63,36 @@ export class StateComponent extends HTMLElement {
     return this.context;
   }
 
-  public getSignals(): Signals {
-    return this.signals;
-  }
-
-  public setAsReady() {
-    this.isReady = true;
-  }
-
   public isStateReady(): boolean {
     return this.isReady;
   }
 
   public setState(state: Record<string, unknown>) {
-    if (isEmptyObject(state)) return;
-    this.setSignals(state);
-    this.setAsReady();
+    if (this.isDisconnected || isEmptyObject(state)) return;
+    if (!this.isNested) this.cleanupContext();
+
+    this.setContext(state);
+    this.isReady = true;
     this.dispatchEvent(new StateReadyEvent(this));
   }
 
-  public setSignals(context: Record<string, unknown>) {
-    if (!this.isNested) {
-      this.cleanupSignals();
-    }
-
-    Object.entries(context).forEach(([key, value]) => {
+  public objectToSignals(object: Record<string, unknown>) {
+    const signals: Signals = {};
+    Object.entries(object).forEach(([key, value]) => {
       if (!this.isDisconnected) {
-        this.signals[key] = value instanceof Signal ? value : new Signal(value);
+        signals[key] = value instanceof Signal ? value : new Signal(value);
       }
     });
+    return signals;
   }
 
-  private cleanupSignals() {
-    Object.values(this.signals).forEach(signal => {
-      if (signal instanceof Signal) {
-        signal.unsubscribeAll();
+  private cleanupContext() {
+    Object.values(this.context).forEach(item => {
+      if (item instanceof Signal) {
+        item.unsubscribeAll();
       }
     });
-    this.signals = Object.create(null) as Signals;
+    this.context = Object.create(null) as Record<string, unknown>;
   }
 
   public markAsNested() {

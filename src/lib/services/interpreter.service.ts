@@ -2,16 +2,11 @@ import { Signal } from '../utils/signal';
 
 export class InterpreterService {
   private cache = new Map<string, Function>();
-  private readonly baseKeys: string[];
-  private readonly baseVals: unknown[];
 
   constructor(
     private base: Record<string, unknown> = {},
     private readonly max = 1000
-  ) {
-    this.baseKeys = Object.keys(base);
-    this.baseVals = Object.values(base);
-  }
+  ) {}
 
   executeCode<R = unknown>(
     code: string,

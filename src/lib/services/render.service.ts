@@ -1,4 +1,4 @@
-import { RESERVED_ATTRIBUTES } from '../config';
+import { ATTRIBUTES, RESERVED_ATTRIBUTES } from '../config';
 import { AttributeService } from './attribute.service';
 import { InterpreterService } from './interpreter.service';
 
@@ -36,14 +36,14 @@ export class RenderService {
     for (const [key, expr] of attributes) {
       const result = this.interpreterService.evaluateExpression(expr);
 
-      if (key === 'value') {
+      if (key === ATTRIBUTES.VALUE) {
         const v = result == null ? '' : String(result);
         if (this.isFormControl(element)) element.value = v;
-        element.setAttribute('value', v);
+        element.setAttribute(ATTRIBUTES.VALUE, v);
         continue;
       }
 
-      if (key === 'hidden') {
+      if (key === ATTRIBUTES.HIDDEN) {
         element.parentElement!.hidden = !!result;
       }
 
@@ -53,10 +53,10 @@ export class RenderService {
   }
 
   private applyReservedDirectives(element: HTMLElement) {
-    const valueAttr = this.attributeService.get(RESERVED_ATTRIBUTES.VALUE);
-    if (valueAttr) {
-      const v = this.interpreterService.evaluateExpression(valueAttr);
-      element.textContent = v == null ? '' : String(v);
+    const textAttr = this.attributeService.get(RESERVED_ATTRIBUTES.TEXT);
+    if (textAttr) {
+      const textValue = this.interpreterService.evaluateExpression(textAttr);
+      element.textContent = textValue == null ? '' : String(textValue);
     }
   }
 }

@@ -99,7 +99,10 @@ export class AttributeService {
     if (!bindExpr) return;
 
     this.el.setAttribute('value', `{${bindExpr}}`);
-    this.el.setAttribute('oninput', `{${bindExpr} = $event.target.value}`);
+    this.el.setAttribute(
+      'oninput',
+      `{${bindExpr}.value = $event.target.value}`
+    );
     this.el.removeAttribute(RESERVED_ATTRIBUTES.BIND);
   }
 }

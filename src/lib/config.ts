@@ -2,7 +2,7 @@ export const config = {
   components: {
     elm: 'x-elm',
     state: 'x-state',
-    var: 'x-var',
+    text: 'x-text',
     for: 'x-for',
     if: 'x-if',
   },
@@ -15,8 +15,13 @@ export const config = {
 export enum RESERVED_ATTRIBUTES {
   AS = 'as',
   FOREACH = 'each',
-  VALUE = 'x-value',
   BIND = 'x-bind',
+  TEXT = 'x-text',
+}
+
+export enum ATTRIBUTES {
+  VALUE = 'value',
+  HIDDEN = 'hidden',
 }
 
 export enum API_ATTRIBUTES {

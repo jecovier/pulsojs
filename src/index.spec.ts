@@ -19,19 +19,19 @@ describe('Component System Tests', () => {
     });
   });
 
-  describe('x-var Component', () => {
+  describe('x-text Component', () => {
     it('should display simple variable values', () => {
-      cy.get('x-var[name]').should('contain', 'John');
+      cy.get('x-text[value]').should('contain', 'John');
     });
 
     it('should display array elements', () => {
-      cy.get('x-var').contains('apple').should('exist');
-      cy.get('x-var').contains('banana').should('exist');
-      cy.get('x-var').contains('cherry').should('exist');
+      cy.get('x-text').contains('apple').should('exist');
+      cy.get('x-text').contains('banana').should('exist');
+      cy.get('x-text').contains('cherry').should('exist');
     });
 
     it('should display deep nested properties', () => {
-      cy.get('x-var').contains('1').should('exist'); // activities.walking.likes
+      cy.get('x-text').contains('1').should('exist'); // activities.walking.likes
     });
 
     it('should display first fruit from array', () => {
@@ -40,6 +40,10 @@ describe('Component System Tests', () => {
 
     it('should display walking likes', () => {
       cy.contains('Walking likes: 1').should('exist');
+    });
+
+    it('should display camel case properties correctly', () => {
+      cy.contains('Camel case: camelCase').should('exist');
     });
   });
 
@@ -203,6 +207,116 @@ describe('Component System Tests', () => {
       cy.get('p')
         .contains('esto es verde si el contador es positivo')
         .should('have.class', '!text-green-700');
+    });
+  });
+
+  describe('Double Binding Tests', () => {
+    beforeEach(() => {
+      // Navigate to the double binding section
+      cy.get('#double-binding').scrollIntoView();
+    });
+
+    it('should display initial name value', () => {
+      cy.get('#double-binding').within(() => {
+        cy.contains('My name is John').should('exist');
+      });
+    });
+
+    it('should update name when input field is changed', () => {
+      cy.get('#double-binding').within(() => {
+        cy.get('input[type="text"]').clear().type('Alice');
+        cy.contains('My name is Alice').should('exist');
+      });
+    });
+
+    it('should update name when textarea is changed', () => {
+      cy.get('#double-binding').within(() => {
+        cy.get('textarea').clear().type('Bob');
+        cy.contains('My name is Bob').should('exist');
+      });
+    });
+
+    it('should update name when select option is changed', () => {
+      cy.get('#double-binding').within(() => {
+        cy.get('select').select('Jane');
+        cy.contains('My name is Jane').should('exist');
+      });
+    });
+
+    it('should update input field when name is changed via button', () => {
+      cy.get('#double-binding').within(() => {
+        cy.get('button').contains('Change name').click();
+        cy.get('input[type="text"]').should('have.value', 'Jane');
+        cy.get('textarea').should('have.value', 'Jane');
+        cy.get('select').should('have.value', 'Jane');
+      });
+    });
+
+    it('should update input field when name is reset via button', () => {
+      cy.get('#double-binding').within(() => {
+        // First change the name
+        cy.get('button').contains('Change name').click();
+        cy.contains('My name is Jane').should('exist');
+
+        // Then reset it
+        cy.get('button').contains('Reset name').click();
+        cy.get('input[type="text"]').should('have.value', 'John');
+        cy.get('textarea').should('have.value', 'John');
+        cy.get('select').should('have.value', 'John');
+      });
+    });
+
+    it('should maintain synchronization between all form elements', () => {
+      cy.get('#double-binding').within(() => {
+        // Change via input
+        cy.get('input[type="text"]').clear().type('Charlie');
+
+        // Verify all elements are synchronized
+        cy.get('textarea').should('have.value', 'Charlie');
+        cy.get('select').should('have.value', null);
+        cy.contains('My name is Charlie').should('exist');
+
+        // Change via textarea
+        cy.get('textarea').clear().type('Diana');
+
+        // Verify all elements are synchronized
+        cy.get('input[type="text"]').should('have.value', 'Diana');
+        cy.get('select').should('have.value', null);
+        cy.contains('My name is Diana').should('exist');
+
+        // Change via select
+        cy.get('select').select('Jane');
+
+        // Verify all elements are synchronized
+        cy.get('input[type="text"]').should('have.value', 'Jane');
+        cy.get('textarea').should('have.value', 'Jane');
+        cy.contains('My name is Jane').should('exist');
+      });
+    });
+
+    it('should handle empty input values', () => {
+      cy.get('#double-binding').within(() => {
+        cy.get('input[type="text"]').clear();
+        cy.contains('My name is ').should('exist');
+        cy.get('textarea').should('have.value', '');
+        cy.get('select').should('have.value', null);
+      });
+    });
+
+    it('should handle special characters in input', () => {
+      cy.get('#double-binding').within(() => {
+        cy.get('input[type="text"]').clear().type('José María');
+        cy.contains('My name is José María').should('exist');
+        cy.get('textarea').should('have.value', 'José María');
+      });
+    });
+
+    it('should handle numbers in input', () => {
+      cy.get('#double-binding').within(() => {
+        cy.get('input[type="text"]').clear().type('John123');
+        cy.contains('My name is John123').should('exist');
+        cy.get('textarea').should('have.value', 'John123');
+      });
     });
   });
 });

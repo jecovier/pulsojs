@@ -1,4 +1,4 @@
-import { config } from '../config';
+import { ATTRIBUTES, config } from '../config';
 import { BaseComponent } from './baseComponent';
 
 class IfComponent extends BaseComponent {
@@ -8,13 +8,14 @@ class IfComponent extends BaseComponent {
   constructor() {
     super();
 
+    this.hidden = true;
     this.html = this.innerHTML;
     this.innerHTML = '';
     this.previousValue = !!this.getAttribute('hidden');
   }
 
   protected render() {
-    const value = this.attributeService.get('value') ?? '';
+    const value = this.attributeService.get(ATTRIBUTES.VALUE) ?? '';
     const result = !!this.interpreterService.evaluateExpression(value);
 
     if (result === this.previousValue) {

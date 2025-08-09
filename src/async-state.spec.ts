@@ -41,7 +41,7 @@ describe('Async State Tests', () => {
         .within(() => {
           cy.get('p').should('contain', 'My name is');
           // The name should be empty since no state was provided
-          cy.get('x-var[name]').should('contain', '');
+          cy.get('x-text[value]').should('contain', '');
         });
     });
   });
@@ -50,7 +50,7 @@ describe('Async State Tests', () => {
     it('should initially show empty name', () => {
       cy.get('#async-state-value').within(() => {
         cy.get('p').should('contain', 'My name is');
-        cy.get('x-var[name]').should('contain', '');
+        cy.get('x-text[value]').should('contain', '');
       });
     });
 
@@ -60,52 +60,20 @@ describe('Async State Tests', () => {
 
       cy.get('#async-state-value').within(() => {
         cy.get('p').should('contain', 'My name is Jose');
-        cy.get('x-var[name]').should('contain', 'Jose');
+        cy.get('x-text[value]').should('contain', 'Jose');
       });
     });
 
     it('should handle the async value update correctly', () => {
       // Check initial state
       cy.get('#async-state-value').within(() => {
-        cy.get('x-var[name]').should('contain', '');
+        cy.get('x-text[value]').should('contain', '');
       });
 
       // Wait for async update and verify
       cy.wait(1100);
       cy.get('#async-state-value').within(() => {
-        cy.get('x-var[name]').should('contain', 'Jose');
-      });
-    });
-  });
-
-  describe('Async State Signals', () => {
-    it('should initially show empty name', () => {
-      cy.get('#async-state-signals').within(() => {
-        cy.get('p').should('contain', 'My name is');
-        cy.get('x-var[name]').should('contain', '');
-      });
-    });
-
-    it('should NOT update name after setSignals is called', () => {
-      // Wait for the setTimeout to execute (1000ms)
-      cy.wait(1100);
-
-      cy.get('#async-state-signals').within(() => {
-        cy.get('p').should('not.contain', 'My name is Jane');
-        cy.get('x-var[name]').should('not.contain', 'Jane');
-      });
-    });
-
-    it('should NOT handle the setSignals update correctly', () => {
-      // Check initial state
-      cy.get('#async-state-signals').within(() => {
-        cy.get('x-var[name]').should('contain', '');
-      });
-
-      // Wait for async update and verify
-      cy.wait(1100);
-      cy.get('#async-state-signals').within(() => {
-        cy.get('x-var[name]').should('not.contain', 'Jane');
+        cy.get('x-text[value]').should('contain', 'Jose');
       });
     });
   });
@@ -125,7 +93,7 @@ describe('Async State Tests', () => {
 
       cy.get('#async-state-set-state').within(() => {
         cy.get('p').should('contain', 'My name is Jane');
-        cy.get('x-var[name]').should('contain', 'Jane');
+        cy.get('x-text[value]').should('contain', 'Jane');
         // The conditional content should now be visible
         cy.get('p').should('contain', 'Jane is here');
       });
@@ -134,14 +102,14 @@ describe('Async State Tests', () => {
     it('should handle the setState update correctly', () => {
       // Check initial state
       cy.get('#async-state-set-state').within(() => {
-        cy.get('x-var[name]').should('contain', 'xxx');
+        cy.get('x-text[value]').should('contain', 'xxx');
         cy.get('p').should('not.contain', 'Jane is here');
       });
 
       // Wait for async update and verify
       cy.wait(2100);
       cy.get('#async-state-set-state').within(() => {
-        cy.get('x-var[name]').should('contain', 'Jane');
+        cy.get('x-text[value]').should('contain', 'Jane');
         cy.get('p').should('contain', 'Jane is here');
       });
     });
@@ -153,18 +121,17 @@ describe('Async State Tests', () => {
       cy.get('h3').should('contain', 'Normal');
       cy.get('h3').should('contain', 'No state');
       cy.get('h3').should('contain', 'Async Value State');
-      cy.get('h3').should('contain', 'Async State Signals');
       cy.get('h3').should('contain', 'Async State');
+      cy.get('h3').should('contain', 'State API');
     });
 
     it('should have proper x-state elements with IDs', () => {
       cy.get('#async-state-value').should('exist');
-      cy.get('#async-state-signals').should('exist');
       cy.get('#async-state-set-state').should('exist');
     });
 
-    it('should have proper x-var elements', () => {
-      cy.get('x-var[name]').should('have.length.at.least', 5);
+    it('should have proper x-text elements', () => {
+      cy.get('x-text[value]').should('have.length.at.least', 5);
     });
 
     it('should have proper x-if elements', () => {
@@ -176,31 +143,25 @@ describe('Async State Tests', () => {
     it('should handle different timing for different async operations', () => {
       // Initially all async states should be empty/default
       cy.get('#async-state-value').within(() => {
-        cy.get('x-var[name]').should('contain', '');
-      });
-      cy.get('#async-state-signals').within(() => {
-        cy.get('x-var[name]').should('contain', '');
+        cy.get('x-text[value]').should('contain', '');
       });
       cy.get('#async-state-set-state').within(() => {
-        cy.get('x-var[name]').should('contain', 'xxx');
+        cy.get('x-text[value]').should('contain', 'xxx');
       });
 
       // After 1 second, first two should be updated
       cy.wait(1100);
       cy.get('#async-state-value').within(() => {
-        cy.get('x-var[name]').should('contain', 'Jose');
-      });
-      cy.get('#async-state-signals').within(() => {
-        cy.get('x-var[name]').should('contain', '');
+        cy.get('x-text[value]').should('contain', 'Jose');
       });
       cy.get('#async-state-set-state').within(() => {
-        cy.get('x-var[name]').should('contain', 'xxx');
+        cy.get('x-text[value]').should('contain', 'xxx');
       });
 
       // After 2 seconds, all should be updated
       cy.wait(1000);
       cy.get('#async-state-set-state').within(() => {
-        cy.get('x-var[name]').should('contain', 'Jane');
+        cy.get('x-text[value]').should('contain', 'Jane');
         cy.get('p').should('contain', 'Jane is here');
       });
     });
@@ -213,13 +174,10 @@ describe('Async State Tests', () => {
 
       // Verify all states are properly reactive
       cy.get('#async-state-value').within(() => {
-        cy.get('x-var[name]').should('contain', 'Jose');
-      });
-      cy.get('#async-state-signals').within(() => {
-        cy.get('x-var[name]').should('contain', '');
+        cy.get('x-text[value]').should('contain', 'Jose');
       });
       cy.get('#async-state-set-state').within(() => {
-        cy.get('x-var[name]').should('contain', 'Jane');
+        cy.get('x-text[value]').should('contain', 'Jane');
         cy.get('p').should('contain', 'Jane is here');
       });
     });
@@ -232,6 +190,32 @@ describe('Async State Tests', () => {
       cy.get('#async-state-set-state').within(() => {
         cy.get('x-if > p').should('contain', 'Jane is here');
       });
+    });
+  });
+
+  describe('State API', () => {
+    it('should update state using stateRef', () => {
+      cy.wait(0); // Wait for DOMContentLoaded event
+      cy.get('#async-state-set-state-api').within(() => {
+        cy.get('x-text[value]').should('contain', 'Jane');
+      });
+    });
+
+    it('should update state using state signal', () => {
+      cy.wait(5100);
+      cy.get('#async-state-set-state-api').within(() => {
+        cy.get('x-text[value]').should('contain', 'John');
+      });
+    });
+
+    it('should trigger effect when state changes', () => {
+      cy.window().then(win => {
+        cy.spy(win.console, 'log').as('consoleLog');
+      });
+
+      cy.wait(1100);
+
+      cy.get('@consoleLog').should('have.been.calledWith', 'John');
     });
   });
 });

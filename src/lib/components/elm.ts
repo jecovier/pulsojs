@@ -15,6 +15,8 @@ export class ElementComponent extends BaseComponent {
   }
 
   protected initialize() {
+    if (!document.contains(this)) return;
+
     this.state = this.stateService.getClosestState();
     this.interpreterService = new InterpreterService(this.state);
 

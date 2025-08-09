@@ -12,20 +12,20 @@
       class="flex flex-col justify-center min-h-screen max-w-xl px-2 mx-auto"
     >
       <x-state
-        value="{name: 'John', fruits: ['apple', 'banana', 'cherry'], activities: {walking: {likes: 1, dislikes: 0}}}"
+        value="{name: 'John', camelCase: 'camelCase', fruits: ['apple', 'banana', 'cherry'], activities: {walking: {likes: 1, dislikes: 0}}}"
       >
         <h2>Basics</h2>
         <section>
-          <h3>x-var</h3>
+          <h3>x-text</h3>
           <div>
-            <p>My name is <x-var name></x-var></p>
+            <p>My name is <x-text value="{name}"></x-text></p>
           </div>
         </section>
         <section>
           <h3>x-elm</h3>
           <div>
             <x-elm>
-              <button class="btn" onclick="{alert($state.name.value)}">
+              <button class="btn" onclick="{alert(name.value)}">
                 what is my name?
               </button>
             </x-elm>
@@ -36,14 +36,18 @@
           <div>
             <p>Using $item state</p>
             <ul id="for-items-test">
-              <x-for each="{$state.fruits}">
-                <li class="text-green-500"><x-var $item></x-var></li>
+              <x-for each="{fruits}">
+                <li class="text-green-500">
+                  <x-text value="{$item}"></x-text>
+                </li>
               </x-for>
             </ul>
             <p>Using "as" attribute</p>
             <ul id="for-as-test">
-              <x-for each="{$state.fruits}" as="element">
-                <li class="text-red-500"><x-var element></x-var></li>
+              <x-for each="{fruits}" as="element">
+                <li class="text-red-500">
+                  <x-text value="{element}"></x-text>
+                </li>
               </x-for>
             </ul>
           </div>
@@ -52,9 +56,12 @@
           <h3>Accessing object states</h3>
           <div>
             <p>
-              First fruit: <x-var fruits[0]></x-var>
+              First fruit: <x-text value="{fruits[0]}"></x-text>
               <br />
-              Walking likes: <x-var activities.walking.likes></x-var>
+              Walking likes:
+              <x-text value="{activities.walking.likes}"></x-text>
+              <br />
+              Camel case: <x-text value="{camelCase}"></x-text>
             </p>
           </div>
         </section>
@@ -69,7 +76,7 @@
                 <button
                   id="btn-plus"
                   class="btn w-10"
-                  onclick="{$state.counter++}"
+                  onclick="{counter.value++;}"
                 >
                   +
                 </button>
@@ -78,7 +85,7 @@
                 <button
                   id="btn-minus"
                   class="btn w-10"
-                  onclick="{$state.counter--}"
+                  onclick="{counter.value--;}"
                 >
                   -
                 </button>
@@ -87,7 +94,7 @@
                 <button
                   id="btn-reset"
                   class="btn"
-                  onclick="{$state.counter = 0}"
+                  onclick="{counter.value = 0}"
                 >
                   reset
                 </button>
@@ -99,7 +106,7 @@
           <h3>value</h3>
           <div>
             <p id="counterResult" class="!text-xl">
-              Counter: <x-var counter></x-var>
+              Counter: <x-text value="{counter}"></x-text>
             </p>
           </div>
         </section>
@@ -107,7 +114,7 @@
           <h3>attributes</h3>
           <div>
             <x-elm>
-              <p class="{$state.counter > 0 && '!text-green-700 bg-green-100'}">
+              <p class="{counter > 0 && '!text-green-700 bg-green-100'}">
                 esto es verde si el contador es positivo
               </p>
             </x-elm>
@@ -126,14 +133,14 @@
             <x-elm>
               <button
                 class="btn"
-                onclick="{$state.showHidden = !$state.showHidden.value}"
+                onclick="{showHidden.value = !showHidden.value}"
               >
                 toggle showHidden
               </button>
             </x-elm>
 
             <x-elm>
-              <p hidden="{$state.showHidden}">Secret value</p>
+              <p hidden="{showHidden}">Secret value</p>
             </x-elm>
           </div>
         </section>
@@ -141,17 +148,14 @@
           <h3>x-if</h3>
           <div>
             <x-elm>
-              <button
-                class="btn"
-                onclick="{$state.showIf = !$state.showIf.value}"
-              >
+              <button class="btn" onclick="{showIf.value = !showIf.value}">
                 toggle showIf
               </button>
             </x-elm>
-            <x-if value="{$state.showIf}">
+            <x-if value="{showIf}">
               <p>ShowIf is true</p>
             </x-if>
-            <x-if value="{!$state.showIf.value}">
+            <x-if value="{!showIf.value}">
               <p>ShowIf is false</p>
             </x-if>
           </div>
@@ -159,15 +163,48 @@
         <section>
           <h3>Bad attributes</h3>
           <div>
-            <x-if value="{$state.showIff}">
+            <x-if value="{showIff}">
               <p>this should not be rendered because var name is wrong</p>
             </x-if>
-            <x-if value="$state.showIf">
+            <x-if value="showIf">
               <p>this should not be rendered because static value</p>
             </x-if>
             <x-if>
               <p>this should not be rendered because no condition</p>
             </x-if>
+          </div>
+        </section>
+      </x-state>
+      <x-state value="{name: 'John'}">
+        <h2>Double binding</h2>
+        <section id="double-binding">
+          <h3>x-bind</h3>
+          <div>
+            <p>My name is <x-text value="{name}"></x-text></p>
+            <form class="flex flex-col gap-2">
+              <x-elm>
+                <input type="text" x-bind="{name}" />
+              </x-elm>
+              <x-elm>
+                <textarea x-bind="{name}"></textarea>
+              </x-elm>
+              <x-elm>
+                <select x-bind="{name}">
+                  <option value="John">John</option>
+                  <option value="Jane">Jane</option>
+                </select>
+              </x-elm>
+            </form>
+            <x-elm>
+              <button onclick="{name.value = 'Jane'}" class="btn">
+                Change name
+              </button>
+            </x-elm>
+            <x-elm>
+              <button onclick="{name.value = 'John'}" class="btn">
+                Reset name
+              </button>
+            </x-elm>
           </div>
         </section>
       </x-state>

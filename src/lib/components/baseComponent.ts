@@ -1,14 +1,14 @@
 import { config } from '../config';
 import { AttributeService } from '../services/attribute.service';
 import { InterpreterService } from '../services/interpreter.service';
-import { State, StateService } from '../services/state.service';
+import { StateService } from '../services/state.service';
 import { Signal } from '../utils/signal';
 import { StateComponent } from './state';
 
 export class BaseComponent extends HTMLElement {
   protected attributeService: AttributeService;
   protected stateService: StateService;
-  protected state!: State;
+  protected state!: Record<string, unknown>;
   protected interpreterService!: InterpreterService;
   protected unsubscribeFunctions: Map<string, () => void> = new Map();
 
@@ -49,12 +49,10 @@ export class BaseComponent extends HTMLElement {
   }
 
   protected subscribeToState() {
-    const dependencies = this.attributeService.getDependencies(
-      this.state.$state
-    );
+    const dependencies = this.attributeService.getDependencies(this.state);
     dependencies.forEach(dependency => {
-      const signal = this.state.$state[dependency] as Signal<unknown>;
-      if (signal) {
+      const signal = this.state[dependency] as Signal<unknown>;
+      if (signal instanceof Signal) {
         this.unsubscribeFunctions.set(
           dependency,
           signal.subscribe(this.render.bind(this))

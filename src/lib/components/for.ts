@@ -42,7 +42,7 @@ class ForComponent extends BaseComponent {
       const stateElement = document.createElement(
         config.components.state
       ) as StateComponent;
-      const context = {
+      const foreachContext = {
         $item: item,
         $index: index,
         $length: foreachArray.length,
@@ -51,9 +51,7 @@ class ForComponent extends BaseComponent {
       };
 
       stateElement.markAsNested();
-      stateElement.setContext(context);
-      stateElement.setSignals(this.state.$state);
-      stateElement.setAsReady();
+      stateElement.setState({ ...this.state, ...foreachContext });
       stateElement.innerHTML = this.html;
 
       fragment.appendChild(stateElement);

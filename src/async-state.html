@@ -16,9 +16,9 @@
         <section>
           <h3>Normal</h3>
           <div>
-            <p>My name is <x-var name></x-var></p>
-            <x-if value="{$state.name == 'John'}">
-              <p><x-var name></x-var> is here</p>
+            <p>My name is <x-text value="{name}"></x-text></p>
+            <x-if value="{name == 'John'}">
+              <p><x-text value="{name}"></x-text> is here</p>
             </x-if>
           </div>
         </section>
@@ -27,7 +27,7 @@
         <section>
           <h3>No state</h3>
           <div>
-            <p>My name is <x-var name></x-var></p>
+            <p>My name is <x-text value="{name}"></x-text></p>
           </div>
         </section>
       </x-state>
@@ -35,7 +35,7 @@
         <section>
           <h3>Async Value State</h3>
           <div>
-            <p>My name is <x-var name></x-var></p>
+            <p>My name is <x-text value="{name}"></x-text></p>
           </div>
         </section>
       </x-state>
@@ -45,29 +45,13 @@
           asyncStateValue.setAttribute('value', '{name: "Jose"}');
         }, 1000);
       </script>
-      <x-state id="async-state-signals">
-        <section>
-          <h3>Async State Signals</h3>
-          <div>
-            <p>My name is <x-var name></x-var></p>
-          </div>
-        </section>
-      </x-state>
-      <script>
-        const asyncStateSignals = document.getElementById(
-          'async-state-signals'
-        );
-        setTimeout(() => {
-          asyncStateSignals.setSignals({ name: 'Jane' });
-        }, 1000);
-      </script>
       <x-state id="async-state-set-state">
         <section>
           <h3>Async State</h3>
           <div>
-            <p>My name is <x-var name>xxx</x-var></p>
-            <x-if value="{$state.name == 'Jane'}">
-              <p><x-var name></x-var> is here</p>
+            <p>My name is <x-text value="{name}">xxx</x-text></p>
+            <x-if value="{name == 'Jane'}">
+              <p><x-text value="{name}"></x-text> is here</p>
             </x-if>
           </div>
         </section>
@@ -79,6 +63,29 @@
         setTimeout(() => {
           asyncStateSetState.setState({ name: 'Jane' });
         }, 2000);
+      </script>
+      <x-state id="async-state-set-state-api">
+        <section>
+          <h3>State API</h3>
+          <div>
+            <p>My name is <x-text value="{name}"></x-text></p>
+          </div>
+        </section>
+      </x-state>
+      <script type="module">
+        createState('async-state-set-state-api', ({ ref, effect }) => {
+          const name = ref('Jane');
+
+          effect(() => {
+            console.log(name.value);
+          }, [name]);
+
+          setTimeout(() => {
+            name.value = 'John';
+          }, 1000);
+
+          return { name };
+        });
       </script>
     </main>
   </body>
