@@ -66,11 +66,6 @@ export class Signal<T> extends EventTarget {
     this._subs.clear();
   }
 
-  [Symbol.iterator]() {
-    const v = this.value as any;
-    return Array.isArray(v) ? v[Symbol.iterator]() : [][Symbol.iterator]();
-  }
-
   private _notify(): void {
     if (this._scheduled || this._subs.size === 0) return;
     this._scheduled = true;
@@ -79,6 +74,27 @@ export class Signal<T> extends EventTarget {
       this._subs.forEach(s => s());
       this.dispatchEvent(new Event('change'));
     });
+  }
+
+  valueOf() {
+    return this.value;
+  }
+
+  toString() {
+    return String(this.value);
+  }
+
+  [Symbol.toStringTag]() {
+    return 'Signal';
+  }
+
+  [Symbol.hasInstance](instance: any) {
+    return instance instanceof Signal;
+  }
+
+  [Symbol.iterator]() {
+    const v = this.value as any;
+    return Array.isArray(v) ? v[Symbol.iterator]() : [][Symbol.iterator]();
   }
 
   [Symbol.toPrimitive](hint: string) {
