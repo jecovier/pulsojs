@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Component Example</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="lib/main.ts" defer></script>
+    <link rel="component" href="components/test-component.html" />
+    <link rel="component" href="components/test-script.html" />
+    <link rel="component" href="components/test-pulso.html" />
+  </head>
+  <body>
+    <main
+      class="flex flex-col justify-center min-h-screen max-w-xl px-2 mx-auto"
+    >
+      <h2>Loader</h2>
+      <section>
+        <h3>Loading components</h3>
+        <div>
+          <test-component></test-component>
+          <test-script></test-script>
+        </div>
+      </section>
+      <section>
+        <h3>Loading components with pulso</h3>
+        <div>
+          <test-pulso></test-pulso>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
