@@ -11,6 +11,8 @@ export class BaseComponent extends HTMLElement {
   protected state!: Record<string, unknown>;
   protected interpreterService!: InterpreterService;
   protected unsubscribeFunctions: Map<string, () => void> = new Map();
+  private cleanupStateReadyListener?: () => void;
+  private isInitialized = false;
 
   constructor() {
     super();
@@ -25,12 +27,27 @@ export class BaseComponent extends HTMLElement {
       return;
     }
 
-    state.addEventListener(config.state.readyEvent, () => this.initialize());
+    const onStateReady = (event: Event) => {
+      if (event.target !== state) {
+        return;
+      }
+
+      this.cleanupStateReadyListener?.();
+      this.cleanupStateReadyListener = undefined;
+      this.initialize();
+    };
+
+    state.addEventListener(config.state.readyEvent, onStateReady);
+    this.cleanupStateReadyListener = () =>
+      state.removeEventListener(config.state.readyEvent, onStateReady);
   }
 
   disconnectedCallback() {
     this.unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
     this.unsubscribeFunctions.clear();
+    this.cleanupStateReadyListener?.();
+    this.cleanupStateReadyListener = undefined;
+    this.isInitialized = false;
   }
 
   protected initialize() {
@@ -38,10 +55,15 @@ export class BaseComponent extends HTMLElement {
       return;
     }
 
+    if (this.isInitialized) {
+      return;
+    }
+
     this.state = this.stateService.getClosestState();
     this.interpreterService = new InterpreterService(this.state);
     this.subscribeToState();
     this.render();
+    this.isInitialized = true;
   }
 
   protected render(): void {

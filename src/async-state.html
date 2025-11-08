@@ -87,6 +87,23 @@
           return { name };
         });
       </script>
+      <x-state id="async-state-set-state-api-array">
+        <section>
+          <h3>State API Array</h3>
+          <div>
+            <x-for each="{names}">
+              <p>My name is <x-text value="{$item}"></x-text></p>
+            </x-for>
+          </div>
+        </section>
+      </x-state>
+      <script type="module">
+        createState('async-state-set-state-api-array', ({ ref, effect }) => {
+          const names = ['Jane', 'John', 'Doe'];
+
+          return { names };
+        });
+      </script>
     </main>
   </body>
 </html>
