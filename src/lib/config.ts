@@ -5,6 +5,7 @@ export const config = {
     text: 'x-text',
     for: 'x-for',
     if: 'x-if',
+    echo: 'x-echo',
   },
   state: {
     readyEvent: 'state-ready',

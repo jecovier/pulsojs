@@ -32,5 +32,9 @@ describe('Components Page Tests', () => {
     cy.contains('button', 'alert').click();
     cy.get('@alertStub').should('have.been.calledWith', 'John');
   });
-});
 
+  it('should display the attributes component state', () => {
+    cy.get('test-attributes').should('exist');
+    cy.get('h2').should('contain', 'Hello');
+  });
+});

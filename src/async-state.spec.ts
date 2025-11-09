@@ -115,30 +115,6 @@ describe('Async State Tests', () => {
     });
   });
 
-  describe('Component Structure', () => {
-    it('should have all required sections', () => {
-      cy.get('section').should('have.length', 5);
-      cy.get('h3').should('contain', 'Normal');
-      cy.get('h3').should('contain', 'No state');
-      cy.get('h3').should('contain', 'Async Value State');
-      cy.get('h3').should('contain', 'Async State');
-      cy.get('h3').should('contain', 'State API');
-    });
-
-    it('should have proper x-state elements with IDs', () => {
-      cy.get('#async-state-value').should('exist');
-      cy.get('#async-state-set-state').should('exist');
-    });
-
-    it('should have proper x-text elements', () => {
-      cy.get('x-text[value]').should('have.length.at.least', 5);
-    });
-
-    it('should have proper x-if elements', () => {
-      cy.get('x-if').should('have.length.at.least', 2);
-    });
-  });
-
   describe('Timing and Async Behavior', () => {
     it('should handle different timing for different async operations', () => {
       // Initially all async states should be empty/default

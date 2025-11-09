@@ -18,12 +18,12 @@ export class Signal<T> extends EventTarget {
       get: (target, prop, receiver) =>
         prop in target || typeof prop === 'symbol'
           ? Reflect.get(target, prop, receiver)
-          : (target._value as any)?.[prop],
+          : (target._value as Record<string, unknown>)?.[prop],
       set: (target, prop, value, receiver) => {
         if (prop in target || typeof prop === 'symbol')
           return Reflect.set(target, prop, value, receiver);
         if (typeof target._value === 'object' && target._value) {
-          (target._value as any)[prop] = value;
+          (target._value as Record<string, unknown>)[prop] = value;
           target._notify();
           return true;
         }
@@ -55,9 +55,8 @@ export class Signal<T> extends EventTarget {
     this._subs.add(fn);
     if (opts?.signal) {
       const off = () => this._subs.delete(fn);
-      opts.signal.aborted
-        ? off()
-        : opts.signal.addEventListener('abort', off, { once: true });
+      if (opts.signal.aborted) off();
+      else opts.signal.addEventListener('abort', off, { once: true });
     }
     return () => this._subs.delete(fn);
   }
@@ -88,17 +87,17 @@ export class Signal<T> extends EventTarget {
     return 'Signal';
   }
 
-  [Symbol.hasInstance](instance: any) {
+  [Symbol.hasInstance](instance: unknown) {
     return instance instanceof Signal;
   }
 
   [Symbol.iterator]() {
-    const v = this.value as any;
+    const v = this.value as unknown;
     return Array.isArray(v) ? v[Symbol.iterator]() : [][Symbol.iterator]();
   }
 
   [Symbol.toPrimitive](hint: string) {
-    const v = this.value as any;
+    const v = this.value as unknown;
     return hint === 'string' ? String(v) : hint === 'number' ? Number(v) : v;
   }
 }

@@ -12,7 +12,7 @@ window.createState = async (stateId: string, callback: StateCallback) => {
     if (!stateElement) {
       throw new Error(`State ${stateId} not found`);
     }
-    
+
     const state = await callback({
       ref: (value: unknown) => {
         return new Signal(value);
@@ -23,7 +23,7 @@ window.createState = async (stateId: string, callback: StateCallback) => {
         }
       },
     });
-    
+
     stateElement.setState(state);
   });
 };
