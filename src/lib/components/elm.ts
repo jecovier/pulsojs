@@ -15,6 +15,8 @@ import { Component } from './component';
 export class ElmComponent extends Component {
   private _attributesMap: Map<string, string> = new Map();
   private _targetElement: HTMLElement | null = null;
+  private _renderScheduled = false;
+  private _pendingRender = false;
 
   constructor() {
     super();
@@ -35,6 +37,32 @@ export class ElmComponent extends Component {
       return;
     }
 
+    // Batch DOM operations using requestAnimationFrame to avoid multiple reflows
+    if (this._renderScheduled) {
+      this._pendingRender = true;
+      return;
+    }
+
+    this._renderScheduled = true;
+    this._pendingRender = false;
+
+    requestAnimationFrame(() => {
+      this._renderScheduled = false;
+      this._performRender();
+      // If another render was requested while we were waiting, schedule it
+      if (this._pendingRender) {
+        this._pendingRender = false;
+        this.render();
+      }
+    });
+  }
+
+  private _performRender(): void {
+    if (!this._attributesMap.size || !this._targetElement) {
+      return;
+    }
+
+    // Batch all DOM operations together
     this._setAttributesValues(this._targetElement, this._attributesMap);
     this._setTextContent(this._targetElement, this._attributesMap);
   }
@@ -113,6 +141,14 @@ export class ElmComponent extends Component {
     element: HTMLElement,
     attributesMap: Map<string, string>
   ): void {
+    // Pre-calculate all changes to batch DOM operations
+    const changes: Array<{
+      type: 'attribute' | 'remove' | 'value';
+      key: string;
+      value?: string;
+    }> = [];
+
+    // First pass: evaluate all expressions and collect changes
     for (const [key, value] of attributesMap) {
       if (
         isEventAttribute(key) ||
@@ -125,17 +161,53 @@ export class ElmComponent extends Component {
       const result = this.evaluateExpression(value);
 
       if (key === Attributes.VALUE && isFormControl(element)) {
-        element.value = String(result);
+        changes.push({
+          type: 'value',
+          key,
+          value: String(result),
+        });
         continue;
       }
 
       if (result === undefined || result === null) {
-        element.removeAttribute(key);
+        changes.push({
+          type: 'remove',
+          key,
+        });
         continue;
       }
 
-      element.setAttribute(key, String(result));
+      changes.push({
+        type: 'attribute',
+        key,
+        value: String(result),
+      });
     }
+
+    // Second pass: apply all changes in batch
+    // This minimizes DOM reflows by grouping all operations together
+    changes.forEach(change => {
+      switch (change.type) {
+        case 'value':
+          if (isFormControl(element)) {
+            (
+              element as
+                | HTMLInputElement
+                | HTMLTextAreaElement
+                | HTMLSelectElement
+            ).value = change.value ?? '';
+          }
+          break;
+        case 'remove':
+          element.removeAttribute(change.key);
+          break;
+        case 'attribute':
+          if (change.value !== undefined) {
+            element.setAttribute(change.key, change.value);
+          }
+          break;
+      }
+    });
   }
 
   private _subscribeToReactiveAttributes(
