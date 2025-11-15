@@ -9,6 +9,7 @@ import {
   isEventAttribute,
   isExpression,
   isFormControl,
+  unwrapExpr,
 } from '../utils';
 import { Component } from './component';
 
@@ -17,6 +18,8 @@ export class ElmComponent extends Component {
   private _targetElement: HTMLElement | null = null;
   private _renderScheduled = false;
   private _pendingRender = false;
+  // Cache for processed bind expressions to avoid reprocessing
+  private _bindExpressionCache = new Map<string, string>();
 
   constructor() {
     super();
@@ -30,6 +33,12 @@ export class ElmComponent extends Component {
 
     this._subscribeToReactiveAttributes(this._attributesMap);
     this._subscribeToEvents(this._targetElement, this._attributesMap);
+  }
+
+  disconnectedCallback(): void {
+    // Clean up cache when component is disconnected
+    this._bindExpressionCache.clear();
+    super.disconnectedCallback();
   }
 
   protected render(): void {
@@ -109,13 +118,18 @@ export class ElmComponent extends Component {
       return;
     }
 
-    const valueWithoutBraces = attribute.value.slice(1, -1);
+    // Use cache key based on the unwrapped expression
+    const exprKey = unwrapExpr(attribute.value);
+    let onInputExpression = this._bindExpressionCache.get(exprKey);
+
+    if (!onInputExpression) {
+      // Process expression only once and cache the result
+      onInputExpression = `{${exprKey}.value = ${ApiAttributes.EVENT}.target.value;}`;
+      this._bindExpressionCache.set(exprKey, onInputExpression);
+    }
 
     attributesMap.set(Attributes.VALUE, attribute.value);
-    attributesMap.set(
-      Attributes.ONINPUT,
-      `{${valueWithoutBraces}.value = ${ApiAttributes.EVENT}.target.value;}`
-    );
+    attributesMap.set(Attributes.ONINPUT, onInputExpression);
   }
 
   private _getOnlyChild(): HTMLElement {
