@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Component Example</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/lib/main.ts" defer></script>
+  </head>
+  <body>
+    <main
+      class="flex flex-col justify-center min-h-screen max-w-xl px-2 mx-auto"
+    >
+      <h2>Basics</h2>
+      <section>
+        <h3>x-elm</h3>
+        <div>
+          <x-elm>
+            <button class="btn">Click me</button>
+            <button class="btn">Click me</button>
+          </x-elm>
+          <x-elm>
+            <button class="btn" onclick="alert('Hello, world!')">
+              Click me
+            </button>
+          </x-elm>
+        </div>
+      </section>
+
+      <script>
+        const name = 'John Doe';
+      </script>
+      <section>
+        <h3>x-elm with expression attributes</h3>
+        <div>
+          <x-elm>
+            <input type="text" value="{name}" disabled />
+          </x-elm>
+        </div>
+      </section>
+
+      <script>
+        const name2 = reactive('Jane Doe');
+
+        setTimeout(() => {
+          name2.value = 'Jane Doe 2';
+        }, 2000);
+      </script>
+      <section>
+        <h3>x-elm with reactive value</h3>
+        <div>
+          <x-elm>
+            <input type="text" value="{name2}" disabled />
+          </x-elm>
+          <div class="flex gap-2">
+            <button class="btn" onclick="{name2.value = 'Jane Doe 3'}">
+              Change name 3
+            </button>
+            <button class="btn" onclick="{name2.value = 'Jane Doe 4'}">
+              Change name 4
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h3>using context</h3>
+        <div>
+          <x-context id="name-context">
+            <x-elm>
+              <input type="text" value="{nameContext}" disabled />
+            </x-elm>
+          </x-context>
+        </div>
+      </section>
+      <script type="module">
+        useContext('name-context', async () => {
+          return { nameContext: 'Jane Doe' };
+        });
+      </script>
+
+      <section>
+        <h3>using context with reactive value</h3>
+        <div>
+          <x-context id="name-context-reactive">
+            <x-elm>
+              <input type="text" value="{nameContextReactive}" disabled />
+            </x-elm>
+          </x-context>
+        </div>
+      </section>
+      <script type="module">
+        useContext('name-context-reactive', async () => {
+          const nameContextReactive = reactive('Jane Doe');
+
+          setTimeout(() => {
+            nameContextReactive.value = 'Jane Doe 2';
+          }, 3000);
+
+          return { nameContextReactive };
+        });
+      </script>
+
+      <section>
+        <h3>using events</h3>
+        <div>
+          <x-context id="event-context">
+            <x-elm>
+              <button class="btn" onclick="{alert(eventName)}">Click me</button>
+            </x-elm>
+          </x-context>
+        </div>
+      </section>
+      <script type="module">
+        useContext('event-context', async () => {
+          return { eventName: 'Event Context' };
+        });
+      </script>
+
+      <section>
+        <h3>Removing attributes when value is undefined or null</h3>
+        <div>
+          <x-elm>
+            <p hidden="{undefinedValue.value}">Hidden</p>
+          </x-elm>
+          <div class="flex gap-2">
+            <x-elm>
+              <button class="btn" onclick="{undefinedValue.value = undefined}">
+                remove hidden attribute
+              </button>
+            </x-elm>
+            <x-elm>
+              <button class="btn" onclick="{undefinedValue.value = true}">
+                add hidden attribute
+              </button>
+            </x-elm>
+          </div>
+        </div>
+      </section>
+      <script>
+        const undefinedValue = reactive(true);
+      </script>
+
+      <section>
+        <h3>x-bind</h3>
+        <div>
+          <x-context id="name-context-bind" class="flex flex-col gap-2">
+            <p>My name is <x-text value="{name}"></x-text></p>
+            <x-elm>
+              <input type="text" x-bind="{name}" />
+            </x-elm>
+            <x-elm>
+              <textarea x-bind="{name}"></textarea>
+            </x-elm>
+            <x-elm>
+              <select x-bind="{name}">
+                <option value="John">John</option>
+                <option value="Jane">Jane</option>
+              </select>
+            </x-elm>
+          </x-context>
+        </div>
+      </section>
+      <script type="module">
+        useContext('name-context-bind', async () => {
+          return { name: reactive('John Doe') };
+        });
+      </script>
+    </main>
+  </body>
+</html>

@@ -1,18 +1,15 @@
-import { Signal } from '../utils/signal';
-
 const MAX_CACHE_SIZE = 1000;
 const SAFE_EXPRESSION_REGEX =
   /(?:^|[^\w$])(eval|Function|setTimeout|setInterval)\s*\(/;
 
+type FunctionType = (...args: unknown[]) => unknown;
+
 export class InterpreterService {
-  private cache = new Map<string, Function>();
+  private cache = new Map<string, FunctionType>();
 
   constructor(private baseContext: Record<string, unknown> = {}) {}
 
-  executeCode<R = unknown>(
-    code: string,
-    context: Record<string, unknown> = {}
-  ): R {
+  executeCode(code: string, context: Record<string, unknown> = {}) {
     if (!this.isSafe(code)) {
       throw new Error('InterpreterService: code blocked by validator');
     }
@@ -26,14 +23,16 @@ export class InterpreterService {
     try {
       let fn = this.cache.get(cacheKey);
       if (fn) {
-        this.updateLRU(cacheKey, fn);
+        this.updateLRU(cacheKey, fn as FunctionType);
       } else {
-        fn = new Function(...contextKeys, '"use strict";\n' + code);
+        fn = new Function(
+          ...contextKeys,
+          '"use strict";\n' + code
+        ) as FunctionType;
         this.setLRU(cacheKey, fn);
       }
 
-      const out = fn.bind(null, ...contextVals)();
-      return out instanceof Signal ? out.value : (out as R);
+      return (fn as FunctionType)(...contextVals);
     } catch (err) {
       throw new Error(
         `InterpreterService: execution error for ${cacheKey}: ${err}`
@@ -41,11 +40,11 @@ export class InterpreterService {
     }
   }
 
-  evaluateExpression<R = unknown>(
+  evaluateExpression(
     expression: string,
     context: Record<string, unknown> = {}
-  ): R {
-    return this.executeCode<R>('return (' + expression + ');', context);
+  ): unknown {
+    return this.executeCode('return (' + expression + ');', context);
   }
 
   clearCache(): void {
@@ -54,12 +53,12 @@ export class InterpreterService {
 
   // refresh the LRU cache by deleting the key and setting it again
   // so it will not be purged by the LRU cache
-  private updateLRU(key: string, fn: Function) {
+  private updateLRU(key: string, fn: FunctionType) {
     this.cache.delete(key);
     this.cache.set(key, fn);
   }
 
-  private setLRU(key: string, fn: Function) {
+  private setLRU(key: string, fn: FunctionType) {
     if (this.cache.size >= MAX_CACHE_SIZE) {
       const firstKey = this.cache.keys().next().value;
       if (firstKey !== undefined) this.cache.delete(firstKey);
@@ -70,4 +69,13 @@ export class InterpreterService {
   private isSafe(s: string): boolean {
     return !SAFE_EXPRESSION_REGEX.test(s);
   }
+}
+
+let interpreterService: InterpreterService;
+
+export function getInterpreterService(): InterpreterService {
+  if (!interpreterService) {
+    interpreterService = new InterpreterService();
+  }
+  return interpreterService;
 }

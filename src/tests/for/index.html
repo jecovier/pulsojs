@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Component Example</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/lib/main.ts" defer></script>
+  </head>
+  <body>
+    <main
+      class="flex flex-col justify-center min-h-screen max-w-xl px-2 mx-auto"
+    >
+      <h2>Basics</h2>
+      <section>
+        <h3>x-for with empty array</h3>
+        <div>
+          <ul>
+            <x-for value="{[0, 0, 0]}">
+              <li>Empty</li>
+            </x-for>
+          </ul>
+        </div>
+      </section>
+      <section>
+        <h3>iterating over an array</h3>
+        <div>
+          <ul>
+            <x-for value="{['apple', 'banana', 'cherry']}">
+              <li>
+                <x-text value="{$item}"></x-text>
+              </li>
+            </x-for>
+          </ul>
+        </div>
+      </section>
+      <section>
+        <h3>iterating over an array of objects</h3>
+        <div>
+          <ul>
+            <x-for
+              value="{[{name: 'apple'}, {name: 'banana'}, {name: 'cherry'}]}"
+            >
+              <li>
+                <x-text value="{$item.name}"></x-text>
+              </li>
+            </x-for>
+          </ul>
+        </div>
+      </section>
+      <section>
+        <h3>iterating over an array of objects with key attribute</h3>
+        <div>
+          <ul>
+            <x-for
+              value="{[{name: 'apple'}, {name: 'banana'}, {name: 'cherry'}]}"
+              key="name"
+            >
+              <li>
+                <x-text value="{$item.name}"></x-text>
+              </li>
+            </x-for>
+          </ul>
+        </div>
+      </section>
+      <section>
+        <h3>iterating over an array of objects with as attribute</h3>
+        <div>
+          <ul>
+            <x-for
+              value="{[{name: 'apple'}, {name: 'banana'}, {name: 'cherry'}]}"
+              as="fruit"
+            >
+              <li>
+                <x-text value="{fruit.name}"></x-text>
+              </li>
+            </x-for>
+          </ul>
+        </div>
+      </section>
+      <section>
+        <h3>
+          iterating over an array of objects with as attribute and key attribute
+        </h3>
+        <div>
+          <ul>
+            <x-for
+              value="{[{name: 'apple'}, {name: 'banana'}, {name: 'cherry'}]}"
+              as="fruit"
+              key="name"
+            >
+              <li>
+                <x-text value="{fruit.name}"></x-text>
+              </li>
+            </x-for>
+          </ul>
+        </div>
+      </section>
+
+      <script>
+        const fruits = [
+          { name: 'apple' },
+          { name: 'banana' },
+          { name: 'cherry' },
+        ];
+      </script>
+      <section>
+        <h3>iterating over a variable</h3>
+        <div>
+          <ul>
+            <x-for value="{fruits}">
+              <li>
+                <x-text value="{$item.name}"></x-text>
+              </li>
+            </x-for>
+          </ul>
+        </div>
+      </section>
+
+      <script>
+        setTimeout(() => {
+          document
+            .querySelector('#fruits-for')
+            .setAttribute(
+              'value',
+              `{[{name: 'orange'}, {name: 'pear'}, {name: 'pineapple'}]}`
+            );
+        }, 2000);
+      </script>
+      <section>
+        <h3>changing the value of the attribute</h3>
+        <div>
+          <ul>
+            <x-for id="fruits-for" value="{fruits}">
+              <li>
+                <x-text value="{$item.name}"></x-text>
+              </li>
+            </x-for>
+          </ul>
+        </div>
+      </section>
+
+      <script>
+        const reactiveFruits = reactive(fruits);
+        setTimeout(() => {
+          reactiveFruits.value = [
+            { name: 'orange' },
+            { name: 'pear' },
+            { name: 'pineapple' },
+          ];
+        }, 2000);
+      </script>
+      <section>
+        <h3>using a reactive variable</h3>
+        <div>
+          <ul>
+            <x-for value="{reactiveFruits}">
+              <li>
+                <x-text value="{$item.name}"></x-text>
+              </li>
+            </x-for>
+          </ul>
+        </div>
+      </section>
+
+      <script>
+        const availableFruitsEmojis = [
+          '🍎',
+          '🍌',
+          '🍓',
+          '🍇',
+          '🍒',
+          '🍑',
+          '🍊',
+          '🍋',
+          '🍇',
+          '🍒',
+          '🍑',
+          '🍊',
+          '🍋',
+        ];
+        const emojisFruits = reactive(['🍎', '🍌', '🍓']);
+        function getRandomEmoji() {
+          return availableFruitsEmojis[
+            Math.floor(Math.random() * availableFruitsEmojis.length)
+          ];
+        }
+      </script>
+      <section>
+        <h3>adding items to the array</h3>
+        <div>
+          <div class="flex flex-wrap gap-2">
+            <x-for value="{emojisFruits}">
+              <x-text value="{$item}"></x-text>
+            </x-for>
+          </div>
+          <div class="flex gap-2">
+            <button
+              class="btn"
+              onclick="{emojisFruits.value = [...emojisFruits.value, getRandomEmoji()]}"
+            >
+              Add fruit
+            </button>
+            <button
+              class="btn"
+              onclick="{emojisFruits.value = emojisFruits.value.slice(0, -1)}"
+            >
+              Remove last fruit
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h3>using a context</h3>
+        <div>
+          <x-context id="countries-context">
+            <ul>
+              <x-for value="{countriesContext}">
+                <li>
+                  <x-text value="{$item}"></x-text>
+                </li>
+              </x-for>
+            </ul>
+          </x-context>
+        </div>
+        <script type="module">
+          useContext('countries-context', async () => {
+            return { countriesContext: ['Ecuador', 'Peru', 'Colombia'] };
+          });
+        </script>
+      </section>
+
+      <section>
+        <h3>using a context with a reactive variable</h3>
+        <div>
+          <x-context id="countries-context-reactive">
+            <ul>
+              <x-for value="{countriesContextReactive}">
+                <li>
+                  <x-text value="{$item}"></x-text>
+                </li>
+              </x-for>
+            </ul>
+          </x-context>
+        </div>
+        <script type="module">
+          useContext('countries-context-reactive', async () => {
+            const countriesContextReactive = reactive(['Ecuador', 'Peru', 'Colombia']);
+            
+            setTimeout(() => {
+              countriesContextReactive.value = ['Orange', 'Pear', 'Pineapple'];
+            }, 3000);
+
+            return { countriesContextReactive };
+          });
+        </script>
+      </section>
+
+      <section>
+        <h3>adding items to the context</h3>
+        <div>
+          <x-context id="fruits-context-reactive">
+            <p class="flex flex-wrap gap-3">
+              <x-for value="{fruitsContextReactive}">
+                  <x-text value="{$item}"></x-text>
+              </x-for>
+            </p>
+            Esto no funciona
+            <div class="flex gap-2">
+              <button class="btn" onclick="{fruitsContextReactive.value = [...fruitsContextReactive.value, 'Orange']}">Add fruit</button>
+              <button class="btn" onclick="{fruitsContextReactive.value = fruitsContextReactive.value.slice(0, -1)}">Remove last fruit</button>
+            </div>
+          </x-context>
+        </div>
+        <script type="module">
+          useContext('fruits-context-reactive', async () => {
+            return { fruitsContextReactive: ['Apple', 'Banana', 'Cherry'] };
+          });
+        </script>
+      </section>
+    </main>
+  </body>
+</html>

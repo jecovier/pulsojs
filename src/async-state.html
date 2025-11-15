@@ -12,7 +12,7 @@
       class="flex flex-col justify-center min-h-screen max-w-xl px-2 mx-auto"
     >
       <h2>States</h2>
-      <x-state value="{name: 'John'}">
+      <x-context value="{name: 'John'}">
         <section>
           <h3>Normal</h3>
           <div>
@@ -22,30 +22,30 @@
             </x-if>
           </div>
         </section>
-      </x-state>
-      <x-state>
+      </x-context>
+      <x-context>
         <section>
           <h3>No state</h3>
           <div>
             <p>My name is <x-text value="{name}"></x-text></p>
           </div>
         </section>
-      </x-state>
-      <x-state id="async-state-value">
+      </x-context>
+      <x-context id="async-state-value">
         <section>
           <h3>Async Value State</h3>
           <div>
             <p>My name is <x-text value="{name}"></x-text></p>
           </div>
         </section>
-      </x-state>
+      </x-context>
       <script>
         const asyncStateValue = document.getElementById('async-state-value');
         setTimeout(() => {
           asyncStateValue.setAttribute('value', '{name: "Jose"}');
         }, 1000);
       </script>
-      <x-state id="async-state-set-state">
+      <x-context id="async-state-set-state">
         <section>
           <h3>Async State</h3>
           <div>
@@ -55,26 +55,26 @@
             </x-if>
           </div>
         </section>
-      </x-state>
+      </x-context>
       <script>
         const asyncStateSetState = document.getElementById(
           'async-state-set-state'
         );
         setTimeout(() => {
-          asyncStateSetState.setState({ name: 'Jane' });
+          asyncStateSetState.setContext({ name: 'Jane' });
         }, 2000);
       </script>
-      <x-state id="async-state-set-state-api">
+      <x-context id="async-state-set-state-api">
         <section>
           <h3>State API</h3>
           <div>
             <p>My name is <x-text value="{name}"></x-text></p>
           </div>
         </section>
-      </x-state>
+      </x-context>
       <script type="module">
-        createState('async-state-set-state-api', ({ ref, effect }) => {
-          const name = ref('Jane');
+        useContext('async-state-set-state-api', async () => {
+          const name = reactive('Jane');
 
           effect(() => {
             console.log(name.value);
@@ -87,18 +87,18 @@
           return { name };
         });
       </script>
-      <x-state id="async-state-set-state-api-array">
+      <x-context id="async-state-set-state-api-array">
         <section>
           <h3>State API Array</h3>
           <div>
-            <x-for each="{names}">
+            <x-for value="{names}">
               <p>My name is <x-text value="{$item}"></x-text></p>
             </x-for>
           </div>
         </section>
-      </x-state>
+      </x-context>
       <script type="module">
-        createState('async-state-set-state-api-array', ({ ref, effect }) => {
+        useContext('async-state-set-state-api-array', () => {
           const names = ['Jane', 'John', 'Doe'];
 
           return { names };

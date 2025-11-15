@@ -3,19 +3,19 @@
 
 describe('Component System Tests', () => {
   beforeEach(() => {
-    cy.visit('/');
+    cy.visit('/index.html');
   });
 
-  describe('x-state Component', () => {
+  describe('x-context Component', () => {
     it('should initialize with basic state', () => {
-      cy.get('x-state').should('exist');
-      cy.get('x-state').should('have.attr', 'value');
+      cy.get('x-context').should('exist');
+      cy.get('x-context').should('have.attr', 'value');
     });
 
     it('should handle nested state objects', () => {
-      cy.get('x-state').first().should('contain', 'John');
-      cy.get('x-state').first().should('contain', 'apple');
-      cy.get('x-state').first().should('contain', '1');
+      cy.get('x-context').first().should('contain', 'John');
+      cy.get('x-context').first().should('contain', 'apple');
+      cy.get('x-context').first().should('contain', '1');
     });
   });
 
@@ -127,7 +127,7 @@ describe('Component System Tests', () => {
       it('should show content when showIf is true', () => {
         cy.get('button').contains('toggle showIf').click();
         cy.get('p').contains('ShowIf is true').should('be.visible');
-        cy.get('p').contains('ShowIf is false').should('not.exist');
+        cy.get('p').contains('ShowIf is false').should('not.visible');
       });
 
       it('should show content when showIf is false', () => {
@@ -136,23 +136,23 @@ describe('Component System Tests', () => {
         cy.get('button').contains('toggle showIf').click();
 
         cy.get('p').contains('ShowIf is false').should('be.visible');
-        cy.get('p').contains('ShowIf is true').should('not.exist');
+        cy.get('p').contains('ShowIf is true').should('not.visible');
       });
 
       it('should toggle between true and false content', () => {
         // Initially should show false content
         cy.get('p').contains('ShowIf is false').should('be.visible');
-        cy.get('p').contains('ShowIf is true').should('not.exist');
+        cy.get('p').contains('ShowIf is true').should('not.visible');
 
         // Click to toggle to true
         cy.get('button').contains('toggle showIf').click();
         cy.get('p').contains('ShowIf is true').should('be.visible');
-        cy.get('p').contains('ShowIf is false').should('not.exist');
+        cy.get('p').contains('ShowIf is false').should('not.visible');
 
         // Click to toggle back to false
         cy.get('button').contains('toggle showIf').click();
         cy.get('p').contains('ShowIf is false').should('be.visible');
-        cy.get('p').contains('ShowIf is true').should('not.exist');
+        cy.get('p').contains('ShowIf is true').should('not.visible');
       });
 
       it('should not render when no condition is provided', () => {
@@ -170,7 +170,7 @@ describe('Component System Tests', () => {
       it('should not render when var name is wrong', () => {
         cy.get('p')
           .contains('this should not be rendered because var name is wrong')
-          .should('not.exist');
+          .should('not.visible');
       });
     });
   });

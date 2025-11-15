@@ -11,6 +11,7 @@
     "lint:fix": "eslint src --ext .ts,.js --fix",
     "format": "prettier --write src/**/*.{ts,js,html,css}",
     "format:check": "prettier --check src/**/*.{ts,js,html,css}",
+    "test": "test:cy",
     "test:cy": "cypress run --e2e"
   },
   "devDependencies": {

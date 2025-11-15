@@ -1,18 +1,17 @@
-import { ATTRIBUTES, config } from '../config';
-import { BaseComponent } from './baseComponent';
+import { Components } from '../config';
+import { Component } from './component';
 
-export class TextComponent extends BaseComponent {
-  protected render() {
-    const valueAttribute = this.attributeService.get(ATTRIBUTES.VALUE);
-    if (!valueAttribute) {
-      console.error('TextComponent', 'No value attribute found');
+class TextComponent extends Component {
+  protected render(value: string | null): void {
+    const result = this.evaluateExpression(value);
+
+    if (result === null) {
+      this.showDefaultContent();
       return;
     }
 
-    const textValue =
-      this.interpreterService.evaluateExpression(valueAttribute);
-    this.textContent = textValue as string;
+    this.textContent = String(result);
   }
 }
 
-customElements.define(config.components.text, TextComponent);
+customElements.define(Components.TEXT, TextComponent);

@@ -47,6 +47,10 @@ export class Signal<T> extends EventTarget {
     return this._prev;
   }
 
+  ref(): this {
+    return this;
+  }
+
   peek(): T {
     return this._value;
   }
@@ -71,7 +75,6 @@ export class Signal<T> extends EventTarget {
     queueMicrotask(() => {
       this._scheduled = false;
       this._subs.forEach(s => s());
-      this.dispatchEvent(new Event('change'));
     });
   }
 

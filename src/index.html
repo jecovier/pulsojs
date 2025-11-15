@@ -11,7 +11,7 @@
     <main
       class="flex flex-col justify-center min-h-screen max-w-xl px-2 mx-auto"
     >
-      <x-state
+      <x-context
         value="{name: 'John', camelCase: 'camelCase', fruits: ['apple', 'banana', 'cherry'], activities: {walking: {likes: 1, dislikes: 0}}}"
       >
         <h2>Basics</h2>
@@ -36,7 +36,7 @@
           <div>
             <p>Using $item state</p>
             <ul id="for-items-test">
-              <x-for each="{fruits}">
+              <x-for value="{fruits}">
                 <li class="text-green-500">
                   <x-text value="{$item}"></x-text>
                 </li>
@@ -44,7 +44,7 @@
             </ul>
             <p>Using "as" attribute</p>
             <ul id="for-as-test">
-              <x-for each="{fruits}" as="element">
+              <x-for value="{fruits}" as="element">
                 <li class="text-red-500">
                   <x-text value="{element}"></x-text>
                 </li>
@@ -65,8 +65,8 @@
             </p>
           </div>
         </section>
-      </x-state>
-      <x-state value="{counter: 0}">
+      </x-context>
+      <x-context value="{counter: 0}">
         <h2>Reactivity</h2>
         <section>
           <h3>Events</h3>
@@ -76,7 +76,7 @@
                 <button
                   id="btn-plus"
                   class="btn w-10"
-                  onclick="{counter.value++;}"
+                  onclick="{counter.value++}"
                 >
                   +
                 </button>
@@ -85,7 +85,7 @@
                 <button
                   id="btn-minus"
                   class="btn w-10"
-                  onclick="{counter.value--;}"
+                  onclick="{counter.value--}"
                 >
                   -
                 </button>
@@ -120,8 +120,8 @@
             </x-elm>
           </div>
         </section>
-      </x-state>
-      <x-state value="{showHidden: false, showIf: false}">
+      </x-context>
+      <x-context value="{showHidden: false, showIf: false}">
         <h2>Conditional rendering</h2>
         <section>
           <h3>Hidden attribute</h3>
@@ -133,14 +133,13 @@
             <x-elm>
               <button
                 class="btn"
-                onclick="{showHidden.value = !showHidden.value}"
+                onclick="{showHidden.value = showHidden.value ? false : true}"
               >
                 toggle showHidden
               </button>
             </x-elm>
-
             <x-elm>
-              <p hidden="{showHidden}">Secret value</p>
+              <p hidden="{showHidden.value}">Secret value</p>
             </x-elm>
           </div>
         </section>
@@ -174,8 +173,8 @@
             </x-if>
           </div>
         </section>
-      </x-state>
-      <x-state value="{name: 'John'}">
+      </x-context>
+      <x-context value="{name: 'John'}">
         <h2>Double binding</h2>
         <section id="double-binding">
           <h3>x-bind</h3>
@@ -207,7 +206,7 @@
             </x-elm>
           </div>
         </section>
-      </x-state>
+      </x-context>
     </main>
 
     <script>

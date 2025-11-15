@@ -1,90 +1,101 @@
-import { config } from '../config';
-import { AttributeService } from '../services/attribute.service';
-import { InterpreterService } from '../services/interpreter.service';
-import { RenderService } from '../services/render.service';
-import { BaseComponent } from './baseComponent';
+import {
+  ApiAttributes,
+  Attributes,
+  Components,
+  ReservedAttributes,
+} from '../config';
+import {
+  getDependencies,
+  isEventAttribute,
+  isExpression,
+  isFormControl,
+} from '../utils';
+import { Component } from './component';
 
-export class ElementComponent extends BaseComponent {
-  private eventListeners = new Map<string, EventListener>();
-  private attributesMap = new Map<string, string>();
-  private targetElement!: HTMLElement;
-  private renderService!: RenderService;
+export class ElmComponent extends Component {
+  private _attributesMap: Map<string, string> = new Map();
+  private _targetElement: HTMLElement | null = null;
 
   constructor() {
     super();
+    this._targetElement = this._getOnlyChild();
+    this._attributesMap = this._getAttributesMap(this._targetElement);
+  }
+  connectedCallback(): void {
+    super.connectedCallback();
+
+    if (!this._targetElement) return;
+
+    this._subscribeToReactiveAttributes(this._attributesMap);
+    this._subscribeToEvents(this._targetElement, this._attributesMap);
   }
 
-  protected initialize() {
-    if (!document.contains(this)) return;
+  protected render(): void {
+    if (!this._attributesMap.size || !this._targetElement) {
+      return;
+    }
 
-    this.state = this.stateService.getClosestState();
-    this.interpreterService = new InterpreterService(this.state);
+    this._setAttributesValues(this._targetElement, this._attributesMap);
+    this._setTextContent(this._targetElement, this._attributesMap);
+  }
 
-    this.targetElement = this.getFirstChild();
-    this.attributeService = new AttributeService(this.targetElement);
-    this.renderService = new RenderService(
-      this.attributeService,
-      this.interpreterService
+  private _setTextContent(
+    targetElement: HTMLElement,
+    attributesMap: Map<string, string>
+  ): void {
+    if (!attributesMap.has(ReservedAttributes.TEXT)) {
+      return;
+    }
+
+    const textValue = this.evaluateExpression(
+      attributesMap.get(ReservedAttributes.TEXT) ?? ''
     );
 
-    this.subscribeToState();
-    this.connectAttributes();
-    this.connectEvents();
-    this.render();
+    targetElement.textContent = String(textValue);
   }
 
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this.disconnectEvents();
-    this.disconnectAttributes();
-  }
+  private _getAttributesMap(targetElement: HTMLElement): Map<string, string> {
+    const attributes = targetElement.attributes;
+    const attributesMap = new Map<string, string>();
 
-  private connectAttributes() {
-    for (const [key, value] of this.attributeService.getReactiveAttributes()) {
-      this.attributesMap.set(key, value);
-      this.attributeService.remove(key);
+    for (const attribute of attributes) {
+      switch (attribute.name) {
+        case ReservedAttributes.BIND:
+          this._addBindAttribute(attributesMap, attribute);
+          break;
+        default:
+          attributesMap.set(attribute.name, attribute.value);
+          break;
+      }
     }
+
+    return attributesMap;
   }
 
-  private disconnectAttributes() {
-    this.attributesMap.clear();
-  }
-
-  private connectEvents() {
-    for (const [key, value] of this.attributeService.getEventAttributes()) {
-      if (!key.startsWith('on')) continue;
-      const eventName = key.slice(2).toLowerCase();
-
-      const handler: EventListener = (e: Event) => this.handleEvent(e, value);
-      this.eventListeners.set(eventName, handler);
-      this.targetElement.addEventListener(eventName, handler);
-      this.attributeService.remove(key);
+  private _addBindAttribute(
+    attributesMap: Map<string, string>,
+    attribute: Attr
+  ): void {
+    if (!isExpression(attribute.value)) {
+      attributesMap.set(Attributes.VALUE, attribute.value);
+      return;
     }
+
+    const valueWithoutBraces = attribute.value.slice(1, -1);
+
+    attributesMap.set(Attributes.VALUE, attribute.value);
+    attributesMap.set(
+      Attributes.ONINPUT,
+      `{${valueWithoutBraces}.value = ${ApiAttributes.EVENT}.target.value;}`
+    );
   }
 
-  private disconnectEvents() {
-    for (const [eventName, handler] of this.eventListeners) {
-      this.targetElement.removeEventListener(eventName, handler);
-    }
-    this.eventListeners.clear();
-  }
-
-  private handleEvent(event: Event, expression: string) {
-    this.interpreterService.executeCode(expression, { $event: event });
-  }
-
-  protected render() {
-    this.renderService.render({
-      element: this.targetElement,
-      attributes: this.attributesMap,
-    });
-  }
-
-  private getFirstChild(): HTMLElement {
+  private _getOnlyChild(): HTMLElement {
     if (this.childElementCount === 0) {
       throw new Error('No child element found');
     }
     if (this.childElementCount > 1) {
+      this.textContent = '❌ Only one child is allowed';
       throw new Error('Only one child element is allowed');
     }
 
@@ -97,6 +108,83 @@ export class ElementComponent extends BaseComponent {
 
     return child;
   }
+
+  private _setAttributesValues(
+    element: HTMLElement,
+    attributesMap: Map<string, string>
+  ): void {
+    for (const [key, value] of attributesMap) {
+      if (
+        isEventAttribute(key) ||
+        !isExpression(value) ||
+        key in ReservedAttributes
+      ) {
+        continue;
+      }
+
+      const result = this.evaluateExpression(value);
+
+      if (key === Attributes.VALUE && isFormControl(element)) {
+        element.value = String(result);
+        continue;
+      }
+
+      if (result === undefined || result === null) {
+        element.removeAttribute(key);
+        continue;
+      }
+
+      element.setAttribute(key, String(result));
+    }
+  }
+
+  private _subscribeToReactiveAttributes(
+    attributesMap: Map<string, string>
+  ): void {
+    const attributes = Array.from(attributesMap.entries()).filter(
+      ([key, value]) => isExpression(value) && !isEventAttribute(key)
+    );
+
+    const allDependencies = attributes
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      .map(([_key, value]) =>
+        getDependencies(value, this.context?.getContext() ?? {})
+      )
+      .flat();
+
+    // Deduplicate dependencies using Set (works by object reference)
+    // This prevents multiple subscriptions to the same Signal instance
+    const uniqueDependencies = new Set(allDependencies);
+
+    uniqueDependencies.forEach(dependency => {
+      const unsubscribe = dependency.subscribe(this.render.bind(this));
+      this.unSubscribers.add(unsubscribe);
+    });
+  }
+
+  private _subscribeToEvents(
+    targetElement: HTMLElement,
+    attributesMap: Map<string, string>
+  ): void {
+    for (const [key, value] of attributesMap) {
+      if (!isEventAttribute(key)) {
+        continue;
+      }
+
+      const eventName = key.slice(2).toLowerCase();
+      const handler: EventListener = (event: Event) => {
+        const context = this.context?.getContext() ?? {};
+        return this.interpreterService.executeCode(value, {
+          ...context,
+          [ApiAttributes.EVENT]: event,
+        });
+      };
+
+      targetElement.removeAttribute(key);
+      targetElement.addEventListener(eventName, handler);
+      this.eventListeners.set(eventName, handler);
+    }
+  }
 }
 
-customElements.define(config.components.elm, ElementComponent);
+customElements.define(Components.ELM, ElmComponent);

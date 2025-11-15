@@ -13,6 +13,7 @@ export type StateCallback = ({
 
 declare global {
   interface Window {
+    ref: (value: unknown) => Signal<unknown>;
     createState: (stateId: string, callback: StateCallback) => Promise<void>;
   }
 }

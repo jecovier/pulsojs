@@ -1,29 +1,50 @@
-import { StateCallback } from '../types';
-import { StateComponent } from './components/state';
 import { Signal } from './utils/signal';
-import { config } from './config';
+import { Components } from './config';
+import { ContextComponent } from './components/context';
 import { ready } from './utils';
 
-window.createState = async (stateId: string, callback: StateCallback) => {
+declare global {
+  interface Window {
+    reactive: (value: unknown) => Signal<unknown>;
+    effect: (
+      callback: () => void,
+      dependencies: Signal<unknown>[]
+    ) => () => void;
+    useContext: (
+      id: string,
+      callback: () => Promise<Record<string, unknown>>
+    ) => Promise<void>;
+  }
+}
+
+window.reactive = (value: unknown) => new Signal(value);
+
+window.effect = (callback: () => void, dependencies: Signal<unknown>[]) => {
+  callback();
+  for (const dependency of dependencies) {
+    dependency.subscribe(callback);
+  }
+  return () => {
+    for (const dependency of dependencies) {
+      dependency.unsubscribeAll();
+    }
+  };
+};
+
+window.useContext = async (
+  id: string,
+  callback: () => Promise<Record<string, unknown>>
+) => {
   ready(async () => {
-    const stateElement = document.querySelector(
-      `${config.components.state}#${stateId}`
-    ) as StateComponent;
-    if (!stateElement) {
-      throw new Error(`State ${stateId} not found`);
+    const context = document.querySelector(
+      `${Components.CONTEXT}#${id}`
+    ) as ContextComponent;
+
+    if (!context) {
+      throw new Error(`Context ${id} not found`);
     }
 
-    const state = await callback({
-      ref: (value: unknown) => {
-        return new Signal(value);
-      },
-      effect: (callback: () => void, dependencies: Signal<unknown>[]) => {
-        for (const dependency of dependencies) {
-          dependency.subscribe(callback);
-        }
-      },
-    });
-
-    stateElement.setState(state);
+    const newContext = await callback();
+    context.setContext(newContext);
   });
 };

@@ -1,3 +1,9 @@
+import {
+  getInterpreterService,
+  InterpreterService,
+} from '../services/interpreter.service';
+import { Signal } from '../utils/signal';
+
 const EXPRESSION_REGEX = /^\s*\{([\s\S]+?)\}\s*$/; // { expression }
 const JS_IDENTIFIER_REGEX = /[a-zA-Z_][a-zA-Z0-9_]*/g; // JS-like identifiers
 const RESERVED_WORDS = new Set([
@@ -95,15 +101,22 @@ export const isExpression = (expression: string): boolean => {
   return EXPRESSION_REGEX.test(expression);
 };
 
+export const isEventAttribute = (attributeName: string): boolean => {
+  return attributeName.startsWith('on') && attributeName.length > 2;
+};
+
 export const unwrapExpr = (raw: string | null): string => {
   if (!raw) return '';
+
   const m = EXPRESSION_REGEX.exec(raw);
+
   return m ? m[1].trim() : '';
 };
 
 export const extractWords = (expression: string): string[] => {
   const results: string[] = [];
   let m: RegExpExecArray | null;
+
   while ((m = JS_IDENTIFIER_REGEX.exec(expression))) {
     const id = m[0];
     if (!RESERVED_WORDS.has(id)) {
@@ -111,4 +124,40 @@ export const extractWords = (expression: string): string[] => {
     }
   }
   return results;
+};
+
+export function getDependencies(
+  value: string,
+  context: Record<string, unknown> = {},
+  interpreterService: InterpreterService = getInterpreterService()
+): Signal<unknown>[] {
+  if (!isExpression(value)) return [];
+
+  const reactiveDependencies: Signal<unknown>[] = [];
+  const words = extractWords(value);
+  const uniqueWords = Array.from(new Set(words));
+
+  uniqueWords.forEach(word => {
+    try {
+      const ref = interpreterService.evaluateExpression(word, context);
+
+      if (!(ref instanceof Signal)) return;
+
+      reactiveDependencies.push(ref);
+    } catch {
+      return;
+    }
+  });
+
+  return reactiveDependencies;
+}
+
+export const isFormControl = (
+  el: Element
+): el is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement => {
+  return (
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLTextAreaElement ||
+    el instanceof HTMLSelectElement
+  );
 };

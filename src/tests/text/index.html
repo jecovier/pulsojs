@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Component Example</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/lib/main.ts" async defer></script>
+  </head>
+  <body>
+    <main
+      class="flex flex-col justify-center min-h-screen max-w-xl px-2 mx-auto"
+    >
+      <h2>Basics</h2>
+      <section>
+        <h3>x-text</h3>
+        <div>
+          <p>My name is <x-text value="test_name"></x-text></p>
+        </div>
+      </section>
+
+      <section>
+        <h3>expression</h3>
+        <div>
+          <p>1 + 2 = <x-text value="{1 + 2}"></x-text></p>
+        </div>
+      </section>
+
+      <section>
+        <h3>unsafe expression</h3>
+        <div>
+          <p>1 + 2 = <x-text value="{eval('1 + 2')}"></x-text></p>
+        </div>
+      </section>
+
+      <script>
+        const name = 'John';
+      </script>
+      <section>
+        <h3>Global variable</h3>
+        <div>
+          <p>My name is <x-text value="{name}"></x-text></p>
+        </div>
+      </section>
+
+      <section>
+        <h3>Default content</h3>
+        <div>
+          <p>
+            My name is
+            <x-text value="{not_defined}">
+              <span>default content</span>
+            </x-text>
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h3>Updating the value</h3>
+        <div>
+          <p>Hello, my name is: <x-text value="waiting"></x-text></p>
+        </div>
+        <script>
+          setTimeout(() => {
+            document
+              .querySelector('x-text[value="waiting"]')
+              .setAttribute('value', 'John Doe');
+          }, 2000);
+        </script>
+      </section>
+
+      <script defer>
+        const reactiveName = reactive('John Doe');
+
+        setTimeout(() => {
+          reactiveName.value = 'Juan Perez';
+        }, 2000);
+      </script>
+      <section>
+        <h3>Reactive value</h3>
+        <div>
+          <p>Hello, my name is: <x-text value="{reactiveName}"></x-text></p>
+        </div>
+      </section>
+
+      <script defer>
+        const fruitName = reactive('Apple');
+      </script>
+      <section>
+        <h3>Reactive value with event</h3>
+        <div>
+          <p>My favorite fruit is: <x-text value="{fruitName}"></x-text></p>
+          <div class="flex gap-2">
+            <button class="btn" onclick="{fruitName.value = 'Banana'}">
+              Change fruit
+            </button>
+            <button class="btn" onclick="{fruitName.value = 'Apple'}">
+              Reset fruit
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <script defer>
+        const counter = reactive(0);
+      </script>
+      <section>
+        <h3>Reactive value with event</h3>
+        <div>
+          <p>Counter: <x-text value="{counter}"></x-text></p>
+          <div class="flex gap-2">
+            <button class="btn" onclick="{counter.value++}">Increment</button>
+            <button class="btn" onclick="{counter.value--}">Decrement</button>
+            <button class="btn" onclick="{counter.value = 0}">Reset</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

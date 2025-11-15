@@ -8,12 +8,12 @@ describe('Async State Tests', () => {
 
   describe('Normal State', () => {
     it('should initialize with basic state value', () => {
-      cy.get('x-state').first().should('have.attr', 'value');
-      cy.get('x-state').first().should('contain', 'John');
+      cy.get('x-context').first().should('have.attr', 'value');
+      cy.get('x-context').first().should('contain', 'John');
     });
 
     it('should display name from state', () => {
-      cy.get('x-state')
+      cy.get('x-context')
         .first()
         .within(() => {
           cy.get('p').should('contain', 'My name is John');
@@ -21,7 +21,7 @@ describe('Async State Tests', () => {
     });
 
     it('should show conditional content when name is John', () => {
-      cy.get('x-state')
+      cy.get('x-context')
         .first()
         .within(() => {
           cy.get('p').should('contain', 'John is here');
@@ -30,13 +30,13 @@ describe('Async State Tests', () => {
   });
 
   describe('No State', () => {
-    it('should handle x-state without initial value', () => {
-      cy.get('x-state').eq(1).should('exist');
-      cy.get('x-state').eq(1).should('not.have.attr', 'value');
+    it('should handle x-context without initial value', () => {
+      cy.get('x-context').eq(1).should('exist');
+      cy.get('x-context').eq(1).should('not.have.attr', 'value');
     });
 
     it('should display empty name when no state is provided', () => {
-      cy.get('x-state')
+      cy.get('x-context')
         .eq(1)
         .within(() => {
           cy.get('p').should('contain', 'My name is');
@@ -178,7 +178,7 @@ describe('Async State Tests', () => {
     });
 
     it('should update state using state signal', () => {
-      cy.wait(5100);
+      cy.wait(2100);
       cy.get('#async-state-set-state-api').within(() => {
         cy.get('x-text[value]').should('contain', 'John');
       });
