@@ -1,6 +1,9 @@
 TODO:
 =====================================================
-- x-bind no funciona del todo
+- optimizar el for para que no reescriba todos los elementos del arreglo si no
+solo aquellos que han cambiado, usando el key
+- revisar el plan de optimizacion
+OPTIMIZATION_PLAN.md
 
 - durante el render, que solo se actualicen los attributos cuyas
   dependencias han cambiado

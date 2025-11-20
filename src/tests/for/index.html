@@ -11,7 +11,7 @@
     <main
       class="flex flex-col justify-center min-h-screen max-w-xl px-2 mx-auto"
     >
-      <h2>Basics</h2>
+      <!--h2>Basics</h2>
       <section>
         <h3>x-for with empty array</h3>
         <div>
@@ -140,74 +140,31 @@
         </div>
       </section>
 
-      <script>
-        const reactiveFruits = reactive(fruits);
-        setTimeout(() => {
-          reactiveFruits.value = [
-            { name: 'orange' },
-            { name: 'pear' },
-            { name: 'pineapple' },
-          ];
-        }, 2000);
+      <script type="module">
+        useContext('reactive-fruits-context', async () => {
+          const reactiveFruits = reactive(fruits);
+          setTimeout(() => {
+            reactiveFruits.value = [
+              { name: 'orange' },
+              { name: 'pear' },
+              { name: 'pineapple' },
+            ];
+          }, 2000);
+          return { reactiveFruits };
+        });
       </script>
       <section>
         <h3>using a reactive variable</h3>
         <div>
-          <ul>
-            <x-for value="{reactiveFruits}">
-              <li>
-                <x-text value="{$item.name}"></x-text>
-              </li>
-            </x-for>
-          </ul>
-        </div>
-      </section>
-
-      <script>
-        const availableFruitsEmojis = [
-          '🍎',
-          '🍌',
-          '🍓',
-          '🍇',
-          '🍒',
-          '🍑',
-          '🍊',
-          '🍋',
-          '🍇',
-          '🍒',
-          '🍑',
-          '🍊',
-          '🍋',
-        ];
-        const emojisFruits = reactive(['🍎', '🍌', '🍓']);
-        function getRandomEmoji() {
-          return availableFruitsEmojis[
-            Math.floor(Math.random() * availableFruitsEmojis.length)
-          ];
-        }
-      </script>
-      <section>
-        <h3>adding items to the array</h3>
-        <div>
-          <div class="flex flex-wrap gap-2">
-            <x-for value="{emojisFruits}">
-              <x-text value="{$item}"></x-text>
-            </x-for>
-          </div>
-          <div class="flex gap-2">
-            <button
-              class="btn"
-              onclick="{emojisFruits.value = [...emojisFruits.value, getRandomEmoji()]}"
-            >
-              Add fruit
-            </button>
-            <button
-              class="btn"
-              onclick="{emojisFruits.value = emojisFruits.value.slice(0, -1)}"
-            >
-              Remove last fruit
-            </button>
-          </div>
+          <x-context id="reactive-fruits-context">
+            <ul>
+              <x-for value="{reactiveFruits}">
+                <li>
+                  <x-text value="{$item.name}"></x-text>
+                </li>
+              </x-for>
+            </ul>
+          </x-context>
         </div>
       </section>
 
@@ -246,8 +203,12 @@
         </div>
         <script type="module">
           useContext('countries-context-reactive', async () => {
-            const countriesContextReactive = reactive(['Ecuador', 'Peru', 'Colombia']);
-            
+            const countriesContextReactive = reactive([
+              'Ecuador',
+              'Peru',
+              'Colombia',
+            ]);
+
             setTimeout(() => {
               countriesContextReactive.value = ['Orange', 'Pear', 'Pineapple'];
             }, 3000);
@@ -255,29 +216,74 @@
             return { countriesContextReactive };
           });
         </script>
-      </section>
+      </section-->
 
+      <script type="module">
+        const availableFruitsEmojis = [
+          '🍎',
+          '🍌',
+          '🍓',
+          '🍇',
+          '🍒',
+          '🍑',
+          '🍊',
+          '🍋',
+          '🍇',
+          '🍒',
+          '🍑',
+          '🍊',
+          '🍋',
+        ];
+        useContext('emojis-fruits-context', async () => {
+          const emojisFruits = reactive(availableFruitsEmojis.slice(0, 3));
+
+          const getRandomEmoji = () => {
+            return availableFruitsEmojis[
+              Math.floor(Math.random() * availableFruitsEmojis.length)
+            ];
+          };
+
+          return { emojisFruits, getRandomEmoji };
+        });
+      </script>
       <section>
-        <h3>adding items to the context</h3>
+        <h3>adding items to the array</h3>
         <div>
-          <x-context id="fruits-context-reactive">
-            <p class="flex flex-wrap gap-3">
-              <x-for value="{fruitsContextReactive}">
-                  <x-text value="{$item}"></x-text>
+          <x-context id="emojis-fruits-context">
+            <div class="flex flex-wrap gap-2 mb-2">
+              <x-for value="{emojisFruits}">
+                <x-text value="{$item}"></x-text>
               </x-for>
-            </p>
-            Esto no funciona
+            </div>
+
             <div class="flex gap-2">
-              <button class="btn" onclick="{fruitsContextReactive.value = [...fruitsContextReactive.value, 'Orange']}">Add fruit</button>
-              <button class="btn" onclick="{fruitsContextReactive.value = fruitsContextReactive.value.slice(0, -1)}">Remove last fruit</button>
+              <x-elm>
+                <button
+                  class="btn"
+                  onclick="{emojisFruits.value = [...emojisFruits.value, getRandomEmoji()]}"
+                >
+                  Add fruit
+                </button>
+              </x-elm>
+              <x-elm>
+                <button
+                  class="btn"
+                  onclick="{emojisFruits.value = emojisFruits.value.slice(0, -1)}"
+                >
+                  Remove last fruit
+                </button>
+              </x-elm>
+              <x-elm>
+                <button
+                  class="btn"
+                  onclick="{emojisFruits.value = [ getRandomEmoji(), ...emojisFruits.value.slice(1)]}"
+                >
+                  update first fruit
+                </button>
+              </x-elm>
             </div>
           </x-context>
         </div>
-        <script type="module">
-          useContext('fruits-context-reactive', async () => {
-            return { fruitsContextReactive: ['Apple', 'Banana', 'Cherry'] };
-          });
-        </script>
       </section>
     </main>
   </body>

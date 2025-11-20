@@ -25,12 +25,6 @@ export class ElmComponent extends Component {
     super();
     this._targetElement = this._getOnlyChild();
     this._attributesMap = this._getAttributesMap(this._targetElement);
-  }
-  connectedCallback(): void {
-    super.connectedCallback();
-
-    if (!this._targetElement) return;
-
     this._subscribeToReactiveAttributes(this._attributesMap);
     this._subscribeToEvents(this._targetElement, this._attributesMap);
   }
@@ -265,6 +259,10 @@ export class ElmComponent extends Component {
           [ApiAttributes.EVENT]: event,
         });
       };
+
+      if (this.eventListeners.has(eventName)) {
+        return;
+      }
 
       targetElement.removeAttribute(key);
       targetElement.addEventListener(eventName, handler);

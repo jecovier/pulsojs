@@ -114,7 +114,7 @@ const defineComponent = (name: string, html: string, scripts: string[]) => {
 
 ready(async () => {
   const links = Array.from(
-    document.head.querySelectorAll('link[rel="component"][href]')
+    document.head.querySelectorAll('link[x-component][href]')
   );
 
   if (!links.length) return;

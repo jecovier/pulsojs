@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Component Example</title>
     <link rel="stylesheet" href="/styles.css" />
-    <script type="module" src="/lib/main.ts" async defer></script>
+    <script type="module" src="/lib/main.ts" defer></script>
   </head>
   <body>
     <main
@@ -15,65 +15,101 @@
       <section>
         <h3>x-if with plain text</h3>
         <div>
-            <p>My name is <x-if value="true">Jose</x-if></p>
-            <p>My name is <x-if value="false">visible because "false" is a truthy value</x-if></p>
+          <p>My name is <x-if value="true">Jose</x-if></p>
+          <p>
+            My name is
+            <x-if value="false">visible because "false" is a truthy value</x-if>
+          </p>
         </div>
       </section>
       <section>
         <h3>hidden by default</h3>
         <div>
-            <p>My name is <x-if value="{false}" hidden>hidden by default</x-if></p>
+          <p>
+            My name is <x-if value="{false}" hidden>hidden by default</x-if>
+          </p>
         </div>
       </section>
       <section>
         <h3>x-if with expression</h3>
         <div>
-            <p>My name is <x-if value="{true}">Jose</x-if></p>
-            <p>My name is <x-if value="{false}">hidden</x-if></p>
+          <p>My name is <x-if value="{true}">Jose</x-if></p>
+          <p>My name is <x-if value="{false}">hidden</x-if></p>
         </div>
       </section>
       <section>
         <h3>updating the value</h3>
         <div id="updating-value">
-            <p>My name is <x-if value="{false}" hidden>now visible</x-if></p>
+          <p>My name is <x-if value="{false}" hidden>now visible</x-if></p>
         </div>
         <script>
-            setTimeout(() => {
-                document.querySelector('#updating-value x-if').setAttribute('value', '{true}');
-            }, 2000);
+          setTimeout(() => {
+            document
+              .querySelector('#updating-value x-if')
+              .setAttribute('value', '{true}');
+          }, 2000);
         </script>
       </section>
 
       <section>
         <h3>reactive value</h3>
         <div>
+          <x-context id="should-show-name-context">
             <p>My name is <x-if value="{shouldShowName}">Jose</x-if></p>
+          </x-context>
         </div>
-        <script>
+        <script type="module">
+          useContext('should-show-name-context', async () => {
             const shouldShowName = reactive(false);
             setTimeout(() => {
-                shouldShowName.value = true;
+              shouldShowName.value = true;
             }, 2000);
+            return { shouldShowName };
+          });
         </script>
       </section>
 
       <section>
-        <script>
-            const shouldShowFruit = reactive(false);
-            const shouldShowCity = reactive(false);
+        <script type="module">
+          useContext('should-show-fruit-context', async () => {
+            return { shouldShowFruit: reactive(false) };
+          });
         </script>
         <h3>reactive value with event</h3>
         <div>
-            <p>My favorite fruit is <x-if value="{shouldShowFruit}">Apple</x-if></p>
-            <button class="btn" onclick="{shouldShowFruit.value = !shouldShowFruit.value}">Toggle fruit</button>
+          <x-context id="should-show-fruit-context">
+            <p>
+              My favorite fruit is <x-if value="{shouldShowFruit}">Apple</x-if>
+            </p>
+            <x-elm>
+              <button
+                class="btn"
+                onclick="{shouldShowFruit.value = !shouldShowFruit.value}"
+              >
+                Toggle fruit
+              </button>
+            </x-elm>
+          </x-context>
         </div>
       </section>
 
       <section>
         <h3>detached</h3>
         <div>
-            <p>My favorite city is <x-if value="{shouldShowCity}" detached>New York</x-if></p>
-            <button class="btn" onclick="{shouldShowCity.value = !shouldShowCity.value}">Toggle city</button>
+          <x-context value="{shouldShowCity: false}">
+            <p>
+              My favorite city is
+              <x-if value="{shouldShowCity}" detached>New York</x-if>
+            </p>
+            <x-elm>
+              <button
+                class="btn"
+                onclick="{shouldShowCity.value = !shouldShowCity.value}"
+              >
+                Toggle city
+              </button>
+            </x-elm>
+          </x-context>
         </div>
       </section>
     </main>
